@@ -39,19 +39,19 @@ chezmoi import --strip-components 1 --destination ${HOME}/.oh-my-zsh oh-my-zsh-m
 chezmoi update
 ```
 
-## Add brew formula|cask
+### Add brew formula|cask
 
 https://www.chezmoi.io/docs/how-to/#use-chezmoi-on-macos
 
 Edit `run_once_before_20-brew-darwin.sh.tmpl`
 
 
-## Add new file
+### Add new file
 ```
 chezmoi add --autotemplate ~/.zsh_alias.zsh
 ```
 
-## Add custom plugin
+### Add custom plugin
 ```
 NEW_PLUGIN=chezmoi
 NEW_PLUGIN_PATH=$(chezmoi source-path)/dot_omz-custom/plugins/$NEW_PLUGIN
@@ -60,7 +60,7 @@ mkdir -p $NEW_PLUGIN_PATH
 chezmoi completion zsh > $NEW_PLUGIN_PATH/_$NEW_PLUGIN
 ```
 
-## Add oh-my-zsh theme
+### Add oh-my-zsh theme
 ```
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM}/themes/powerlevel10k
 chezmoi add -r ${ZSH_CUSTOM}
@@ -69,3 +69,8 @@ git add dot_omz-custom
 ```
 
 Set ZSH_THEME="powerlevel10k/powerlevel10k" in `~/.zshrc`.
+
+
+## Visual Studio Code
+
+Visual Studio Code: Open File → Preferences → Settings, enter terminal.integrated.fontFamily in the search box and set the value to MesloLGS NF.
