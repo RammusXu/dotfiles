@@ -59,3 +59,11 @@ NEW_PLUGIN_PATH=$(chezmoi source-path)/dot_omz-custom/plugins/$NEW_PLUGIN
 mkdir -p $NEW_PLUGIN_PATH
 chezmoi completion zsh > $NEW_PLUGIN_PATH/_$NEW_PLUGIN
 ```
+
+## Add oh-my-zsh theme
+```
+git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM}/themes/powerlevel10k
+chezmoi add -r ${ZSH_CUSTOM}
+chezmoi cd
+git add dot_omz-custom
+```
