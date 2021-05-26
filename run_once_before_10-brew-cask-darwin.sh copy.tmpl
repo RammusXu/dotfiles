@@ -7,17 +7,9 @@ command -v brew || \
 
 # Install packages
 brew bundle --no-lock --file=/dev/stdin <<EOF
-brew "git"
-brew "jq"
-brew "hey"
-brew "httpie"
-
-brew "helm"
-brew "k9s"
-brew "k3d"
-
-cask "google-chrome"
+#cask "google-chrome"
 cask "iterm2"
 cask "ngrok"
+#cask "visual-studio-code"
 EOF
 {{ end -}}
