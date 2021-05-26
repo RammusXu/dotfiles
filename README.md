@@ -67,3 +67,5 @@ chezmoi add -r ${ZSH_CUSTOM}
 chezmoi cd
 git add dot_omz-custom
 ```
+
+Set ZSH_THEME="powerlevel10k/powerlevel10k" in `~/.zshrc`.
