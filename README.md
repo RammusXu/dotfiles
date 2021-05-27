@@ -1,7 +1,6 @@
 # dotfiles
 
 ![demo](./images/demo.png)
-![demo-autosuggestions](./images/demo-autosuggestions.png)
 
 ## Install
 
