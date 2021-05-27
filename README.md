@@ -14,17 +14,19 @@ sh -c "$(curl -fsLS git.io/chezmoi)"
 sh -c "$(curl -fsLS git.io/chezmoi)" -- init --apply rammusxu
 ```
 
-## Init
+## Setup project
 
-https://github.com/new
 
-```
-chezmoi init --apply rammusxu
-```
+1. 開新的 Git repo: https://github.com/new ，取名叫 dotfiles。
 
-### Get oh-my-zsh
+2. 初始化本地的 chezmoi
+    ```
+    chezmoi init --apply rammusxu
+    ```
 
-https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/templates/zshrc.zsh-template
+### Get/Update oh-my-zsh
+
+不要開啟 .oh-my-zsh 的自動更新，不然 git commit 會很亂。
 
 https://github.com/twpayne/chezmoi/blob/master/docs/HOWTO.md#include-a-subdirectory-from-another-repository-like-oh-my-zsh
 
@@ -32,8 +34,17 @@ https://github.com/twpayne/chezmoi/blob/master/docs/HOWTO.md#include-a-subdirect
 curl -s -L -o oh-my-zsh-master.tar.gz https://github.com/robbyrussell/oh-my-zsh/archive/master.tar.gz
 mkdir -p $(chezmoi source-path)/dot_oh-my-zsh
 chezmoi import --strip-components 1 --destination ${HOME}/.oh-my-zsh oh-my-zsh-master.tar.gz
-
 ```
+
+### Change ZSH_CUSTOM folder
+
+不要用 `.oh-my-zsh/custom` 當作預設，因為更新 `.oh-my-zsh` 的時候會被覆蓋掉。
+
+`dot_zshrc.tmpl`
+```
+ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
+```
+
 ## Update
 ```bash
 chezmoi update
@@ -48,6 +59,7 @@ Edit `run_once_before_20-brew-darwin.sh.tmpl`
 
 ### Add new file
 ```
+chezmoi add ~/.zsh_alias.zsh
 chezmoi add --autotemplate ~/.zsh_alias.zsh
 ```
 
