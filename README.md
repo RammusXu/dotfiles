@@ -1,5 +1,8 @@
 # dotfiles
 
+![demo](./images/demo.png)
+![demo-autosuggestions](./images/demo-autosuggestions.png)
+
 ## Install
 
 ```
@@ -46,6 +49,8 @@ ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
 ```
 
 ## iterm
+
+> Credit: https://apple.stackexchange.com/questions/136928/using-alt-cmd-right-left-arrow-in-iterm/136931
 
 Preferences -> Profiles -> Keys -> Presets: `Natural Text Editing`
 
