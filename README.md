@@ -21,7 +21,7 @@ sh -c "$(curl -fsLS git.io/chezmoi)" -- init --apply rammusxu
 
 1. 開新的 Git repo: https://github.com/new ，取名叫 dotfiles。
 
-2. 初始化本地的 chezmoi。
+2. 初始化本地的 chezmoi。
     ```
     chezmoi init --apply rammusxu
     ```
