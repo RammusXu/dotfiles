@@ -7,9 +7,10 @@ command -v brew || \
 
 # Install packages
 brew bundle --no-lock --file=/dev/stdin <<EOF
-#cask "google-chrome"
+cask "google-chrome"
 cask "iterm2"
 cask "ngrok"
-#cask "visual-studio-code"
+cask "visual-studio-code"
+cask "authy"
 EOF
 {{ end -}}
