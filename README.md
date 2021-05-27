@@ -45,6 +45,12 @@ chezmoi import --strip-components 1 --destination ${HOME}/.oh-my-zsh oh-my-zsh-m
 ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
 ```
 
+## iterm
+
+Preferences -> Profiles -> Keys -> Presets: `Natural Text Editing`
+
+![iterm-keys](./images/iterm-keys.png)
+
 ## Update
 ```bash
 chezmoi update
