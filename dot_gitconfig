@@ -4,3 +4,5 @@
 
 [credential]
 	helper = osxkeychain
+[pager]
+	branch = false
