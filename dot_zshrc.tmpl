@@ -116,3 +116,10 @@ then
     source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 fi
+
+# pyenv
+if [[ $(command -v pyenv) ]]
+then
+    eval "$(pyenv init --path)"
+    eval "$(pyenv init -)"
+fi
