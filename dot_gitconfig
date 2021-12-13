@@ -1,18 +1,18 @@
 [user]
-	name = RammusXu
-	email = comte_ken@hotmail.com
+        name = RammusXu
+        email = comte_ken@hotmail.com
 
 [credential]
-	helper = osxkeychain
+        helper = osxkeychain
 [pager]
-	branch = false
+        branch = false
 [core]
-	excludesfile = /Users/rammus/.gitignore_global
+        excludesfile = /Users/rammus/.gitignore_global
 [difftool "sourcetree"]
-	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-	path =
+        cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+        path =
 [mergetool "sourcetree"]
-	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
-	trustExitCode = true
+        cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+        trustExitCode = true
 [commit]
-	template = /Users/rammus/.stCommitMsg
+        template = /Users/rammus/.stCommitMsg
