@@ -100,8 +100,11 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 source ~/.zsh_alias
-[[ ! -f ~/.zsh_alias_dynamic ]] || source ~/.zsh_alias_dynamic
 
+# 開發/測試用, 還沒放到 git
+# export PATH=$PATH:/Users/rammus/.local/share/solana/install/active_release/bin
+# alias tf="terraform"
+[[ ! -f ~/.zsh_nogit ]] || source ~/.zsh_nogit
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
