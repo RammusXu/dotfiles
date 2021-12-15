@@ -8,3 +8,4 @@ alias docker-debug-image="docker run -it --rm -v $PWD:/app --entrypoint sh "
 ## Alias
 alias k="kubectl"
 alias ll="ls -lat"
+alias git-clean='git branch --merged | egrep -v "(^\*|master)" | xargs git branch -d'
