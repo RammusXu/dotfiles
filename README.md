@@ -92,6 +92,19 @@ git add dot_omz-custom
 
 Set ZSH_THEME="powerlevel10k/powerlevel10k" in `~/.zshrc`.
 
+### .ssh/config
+```
+# GitLab.com
+Host gitlab.com
+  PreferredAuthentications publickey
+  IdentityFile ~/.ssh/gitlab_com
+
+# Github.com
+Host github.com
+  PreferredAuthentications publickey
+  IdentityFile ~/.ssh/github_com
+```
+
 
 ## Visual Studio Code
 
