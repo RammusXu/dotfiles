@@ -9,3 +9,6 @@ alias docker-debug-image="docker run -it --rm -v $PWD:/app --entrypoint sh "
 alias k="kubectl"
 alias ll="ls -lat"
 alias git-clean='git branch --merged | egrep -v "(^\*|master)" | xargs git branch -d'
+alias git-pr='git push -u origin HEAD && gh pr create -f'
+alias git-pr-fork='git push -u rammus HEAD && gh pr create -f'
+alias git-master='git checkout master && git pull'
