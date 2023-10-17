@@ -1,5 +1,5 @@
 ## docker
-export HOME_BLOG={{ .chezmoi.homedir }}/workspace/rammusxu.github.io
+export HOME_BLOG={{ .chezmoi.homeDir }}/workspace/rammusxu.github.io
 alias docker-hexo='docker run --rm -e GIT_EMAIL="comte_ken@hotmail.com" -e GIT_NAME="Rammus Xu" -v "/Users/rammus/.ssh:/root/.ssh" -v ${HOME_BLOG}:/blog rammusxu/docker-hexo'
 alias hexo='docker run -d --name hexo -p 4000:4000 -v ${HOME_BLOG}:/blog rammusxu/docker-hexo'
 alias docker-debug="docker run -it --rm -v $PWD:/app alpine:3.11 sh"
