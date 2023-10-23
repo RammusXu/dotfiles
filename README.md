@@ -4,7 +4,7 @@
 
 ## New Mac
 ```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+sh -c "$(curl -fsLS git.io/chezmoi)" -- init --apply rammusxu
 ```
 
 ## Install
@@ -56,7 +56,7 @@ ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
 
 > Credit: https://apple.stackexchange.com/questions/136928/using-alt-cmd-right-left-arrow-in-iterm/136931
 
-Preferences -> Profiles -> Keys -> Presets: `Natural Text Editing`
+Preferences -> Profiles -> Keys -> Key Mappings -> Presets: `Natural Text Editing`
 
 ![iterm-keys](./images/iterm-keys.png)
 
