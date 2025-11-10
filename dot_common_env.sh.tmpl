@@ -1,0 +1,23 @@
+# Common environment variables and PATH settings for Zsh and Bash
+
+# Add common bin paths
+export PATH=$HOME/bin:/usr/local/bin:$PATH
+
+# rbenv initialization
+export PATH="{{ .chezmoi.homeDir }}/.rbenv/bin:$PATH"
+
+# Created by `pipx` on 2024-07-29 12:33:00
+export PATH="$PATH:{{ .chezmoi.homeDir }}/.local/bin:/opt/homebrew/opt/node@22/bin"
+
+# NVM settings
+export NVM_DIR="{{ .chezmoi.homeDir }}/.nvm"
+[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
+[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+
+# The next line updates PATH for the Google Cloud SDK.
+# Using .chezmoi.homeDir for portability
+if [ -f '{{ .chezmoi.homeDir }}/Downloads/google-cloud-sdk/path.sh.inc' ]; then . '{{ .chezmoi.homeDir }}/Downloads/google-cloud-sdk/path.sh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+# Using .chezmoi.homeDir for portability
+if [ -f '{{ .chezmoi.homeDir }}/Downloads/google-cloud-sdk/completion.sh.inc' ]; then . '{{ .chezmoi.homeDir }}/Downloads/google-cloud-sdk/completion.sh.inc'; fi

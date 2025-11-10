@@ -7,22 +7,36 @@ command -v brew || \
 
 # Install packages
 brew bundle --no-lock --file=/dev/stdin <<EOF
+# Taps (optional, if you use custom taps)
+# tap "homebrew/cask-fonts"
+
+# Formulae (command-line tools)
 brew "git"
 brew "jq"
 brew "tree"
 brew "htop"
-brew "hey"
 brew "httpie"
-brew "thefuck"
-
 brew "kubernetes-cli"
 brew "kustomize"
 brew "k9s"
 brew "kubectx"
 brew "helm"
 brew "k3d"
-
 brew "zsh-autosuggestions"
 brew "zsh-syntax-highlighting"
+brew "fzf"
+brew "zoxide"
+brew "bat"
+brew "uv"
+brew "terraform"
+brew "gh"
+
+# Casks (applications)
+cask "google-chrome"
+cask "docker"
+cask "visual-studio-code"
+
+# Mac App Store applications (requires `mas` to be installed first, e.g., brew "mas")
+# mas "Magnet", 441258766
 EOF
 {{ end -}}
