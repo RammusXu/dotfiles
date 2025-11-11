@@ -7,6 +7,12 @@
         email = comte_ken@hotmail.com
 {{ end }}
 
+[includeIf "gitdir:~/.local/share/chezmoi/"]
+    path = ~/.gitconfig-personal
+
+[includeIf "gitdir:~/personal/"]
+    path = ~/.gitconfig-personal
+
 [credential]
         helper = osxkeychain
 [pager]
