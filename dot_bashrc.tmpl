@@ -1,18 +1,4 @@
 # Load common environment variables and PATH settings
-if [ -f "{{ .chezmoi.homeDir }}/.common_env.sh" ]; then
-    source "{{ .chezmoi.homeDir }}/.common_env.sh"
+if [ -f "{{ .chezmoi.homeDir }}/.common_env" ]; then
+    source "{{ .chezmoi.homeDir }}/.common_env"
 fi
-
-# Load common aliases
-if [ -f "{{ .chezmoi.homeDir }}/.bash_alias" ]; then
-    source "{{ .chezmoi.homeDir }}/.bash_alias"
-fi
-
-# The next line enables shell command completion for gcloud.
-# This is specifically for bash, as zsh handles it differently.
-if [ -f "$(brew --prefix)/share/google-cloud-sdk/completion.bash.inc" ]; then
-    source "$(brew --prefix)/share/google-cloud-sdk/completion.bash.inc"
-fi
-
-# VSCode shell integration for bash
-[[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path bash)"

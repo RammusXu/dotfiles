@@ -1,5 +1,5 @@
 [user]
-{{ if strings.Contains .chezmoi.hostname "rammusxu" }}
+{{ if contains "rammusxu" .chezmoi.hostname }}
         name = rammusxu-eslite
         email = rammusxu@eslite.com
 {{ else }}

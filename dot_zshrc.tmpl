@@ -1,5 +1,7 @@
 # Load common environment variables and PATH settings
-source "{{ .chezmoi.homeDir }}/.common_env.sh"
+if [ -f "{{ .chezmoi.homeDir }}/.common_env" ]; then
+    source "{{ .chezmoi.homeDir }}/.common_env"
+fi
 
 # Path to your oh-my-zsh installation.
 export ZSH="{{ .chezmoi.homeDir }}/.oh-my-zsh"
@@ -87,15 +89,9 @@ source $ZSH/oh-my-zsh.sh
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
-source ~/.bash_alias
-
-# 開發/測試用, 還沒放到 git
-# alias tf="terraform"
-[[ ! -f ~/.zsh_nogit ]] || source ~/.zsh_nogit
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
 
 # Brew Compilation
 if type brew &>/dev/null
