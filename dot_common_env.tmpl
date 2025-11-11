@@ -8,9 +8,6 @@ if [ -f "{{ .chezmoi.homeDir }}/.bash_alias" ]; then
     source "{{ .chezmoi.homeDir }}/.bash_alias"
 fi
 
-# VSCode shell integration for bash
-[[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path bash)"
-
 # Add common bin paths
 export PATH=$HOME/bin:/usr/local/bin:/opt/homebrew/bin:$PATH
 
