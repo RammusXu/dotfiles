@@ -40,6 +40,10 @@ brew "gh"
 brew "wget"
 brew "curl"
 
+# developer
+brew "rbenv"
+brew "go"
+
 # Applications
 cask "google-chrome"
 cask "visual-studio-code"
