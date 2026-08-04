@@ -1,3 +1,10 @@
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 # Load common environment variables and PATH settings
 if [ -f "{{ .chezmoi.homeDir }}/.common_env" ]; then
     source "{{ .chezmoi.homeDir }}/.common_env"
@@ -77,6 +84,10 @@ ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(git chezmoi docker zoxide zsh-autosuggestions fzf terraform gcloud nvm node uv)
 
+# Lazy-load nvm: avoids sourcing nvm.sh + scanning for .nvmrc on every shell
+# startup (~1.3s in profiling). nvm/node/npm still work, just load on first use.
+zstyle ':omz:plugins:nvm' lazy yes
+
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
@@ -103,3 +114,16 @@ then
 fi
 
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
+
+# bun completions
+[ -s "{{ .chezmoi.homeDir }}/.bun/_bun" ] && source "{{ .chezmoi.homeDir }}/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+# CF CLI completions
+[[ -f "{{ .chezmoi.homeDir }}/.config/cf/completions/_cf.zsh" ]] && source "{{ .chezmoi.homeDir }}/.config/cf/completions/_cf.zsh"
+
+
+# Added by Antigravity CLI installer (guarded against duplicate PATH entries)
+case ":$PATH:" in *":{{ .chezmoi.homeDir }}/.local/bin:"*) ;; *) export PATH="{{ .chezmoi.homeDir }}/.local/bin:$PATH" ;; esac
