@@ -82,13 +82,18 @@ ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-# zsh-syntax-highlighting 必須放在最後一個。
-# 舊設定裡 brew 裝了 zsh-syntax-highlighting 卻沒有載入，等於白裝。
-plugins=(git chezmoi docker zoxide fzf terraform gcloud nvm node uv zsh-autosuggestions zsh-syntax-highlighting)
+# plugins 清單從 .chezmoidata.yaml 產生 —— 那裡同時決定 .chezmoiexternal.toml
+# 要從 oh-my-zsh 抓哪些 plugin 目錄下來。要加 plugin 就改那一個檔案。
+# zsh-syntax-highlighting 必須是最後一個（.chezmoidata.yaml 裡已排好順序）。
+plugins=({{ range .omzPlugins }}{{ . }} {{ end }}{{ range .customPlugins }}{{ . }} {{ end }})
 
 # Lazy-load nvm: avoids sourcing nvm.sh + scanning for .nvmrc on every shell
 # startup (~1.3s in profiling). nvm/node/npm still work, just load on first use.
 zstyle ':omz:plugins:nvm' lazy yes
+
+# ~/.oh-my-zsh 由 chezmoi external 管理（沒有 .git），OMZ 自己的更新機制會失敗。
+# 更新走 `make refresh`。
+zstyle ':omz:update' mode disabled
 
 source $ZSH/oh-my-zsh.sh
 

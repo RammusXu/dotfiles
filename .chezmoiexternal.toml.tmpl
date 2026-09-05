@@ -1,0 +1,48 @@
+# oh-my-zsh 與 theme/plugin 一律由 chezmoi 直接抓上游，不 vendor 進 repo。
+#
+# 強制重抓：make refresh   (chezmoi apply --refresh-externals)
+# 日常快速套用：make quick  (chezmoi apply --exclude=externals)
+
+[".oh-my-zsh"]
+    type = "archive"
+    url = "https://github.com/ohmyzsh/ohmyzsh/archive/master.tar.gz"
+    exact = true
+    stripComponents = 1
+    refreshPeriod = "168h"
+    # 只取用得到的部分。oh-my-zsh 有 300+ 個 plugin，全抓等於讓 chezmoi 每次
+    # apply 都要比對上千個檔案。清單從 .chezmoidata.yaml 產生，不會跟 .zshrc 脫節。
+    #
+    # 注意：include 的 pattern 是比對「壓縮檔裡的原始路徑」，也就是
+    #       stripComponents 生效【之前】的名字，所以要帶 ohmyzsh-master/ 前綴，
+    #       而且中間目錄要自己列出來（只寫 **/ 不會建目錄）。
+    include = [
+        "ohmyzsh-master",
+        "ohmyzsh-master/oh-my-zsh.sh",
+        "ohmyzsh-master/lib", "ohmyzsh-master/lib/**",
+        "ohmyzsh-master/tools", "ohmyzsh-master/tools/**",
+        "ohmyzsh-master/plugins",
+{{- range .omzPlugins }}
+        "ohmyzsh-master/plugins/{{ . }}", "ohmyzsh-master/plugins/{{ . }}/**",
+{{- end }}
+    ]
+
+[".omz-custom/themes/powerlevel10k"]
+    type = "archive"
+    url = "https://github.com/romkatv/powerlevel10k/archive/master.tar.gz"
+    exact = true
+    stripComponents = 1
+    refreshPeriod = "168h"
+
+[".omz-custom/plugins/zsh-autosuggestions"]
+    type = "archive"
+    url = "https://github.com/zsh-users/zsh-autosuggestions/archive/master.tar.gz"
+    exact = true
+    stripComponents = 1
+    refreshPeriod = "168h"
+
+[".omz-custom/plugins/zsh-syntax-highlighting"]
+    type = "archive"
+    url = "https://github.com/zsh-users/zsh-syntax-highlighting/archive/master.tar.gz"
+    exact = true
+    stripComponents = 1
+    refreshPeriod = "168h"

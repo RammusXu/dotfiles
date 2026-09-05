@@ -34,7 +34,8 @@ bootstrap 不會因為缺 secret 而失敗 —— apply 完會印出一份檢查
 | 檔案 | 作用 |
 |---|---|
 | `.chezmoi.toml.tmpl` | init 時問 role / isWork，決定這台機器裝什麼 |
-| `.chezmoiexternal.toml` | oh-my-zsh、powerlevel10k、zsh plugins 由 chezmoi 直接抓上游 |
+| `.chezmoidata.yaml` | **zsh plugin 清單的單一事實來源** —— 同時決定 `.zshrc` 的 `plugins=()` 和 external 要抓哪些目錄 |
+| `.chezmoiexternal.toml.tmpl` | oh-my-zsh、powerlevel10k、zsh plugins 由 chezmoi 直接抓上游 |
 | `.chezmoiignore` | 擋掉 repo-only 檔案，避免被 apply 到 `$HOME` |
 | `Brewfile` | CLI 工具，兩種 role 都裝 |
 | `Brewfile.gui` | GUI cask，只有 `role=primary` 裝 |
@@ -64,16 +65,31 @@ bootstrap 不會因為缺 secret 而失敗 —— apply 完會印出一份檢查
 ## 日常操作
 
 ```bash
-chezmoi diff                    # 看會改什麼（apply 前一定先跑）
-chezmoi apply                   # 套用
-chezmoi update                  # pull + apply
-make refresh                    # 強制重抓 oh-my-zsh / p10k 上游
-make audit                      # 比對 Brewfile 和機器實際狀態
+chezmoi diff       # 看會改什麼（apply 前一定先跑）
+make quick         # 日常套用：跳過 externals，最快
+make apply         # 完整套用（會檢查 externals 是否過期）
+make refresh       # 強制重抓 oh-my-zsh / p10k 上游
+chezmoi update     # 其他電腦抓最新版 = git pull + apply
+make audit         # 比對 Brewfile 和機器實際狀態
 ```
 
+改設定的流程：
+
+```bash
+chezmoi edit ~/.zshrc     # 改 source 檔，不是直接改 ~/.zshrc
+chezmoi diff && make quick
+cd $(chezmoi source-path) && git add -A && git commit && git push
+```
+
+`chezmoi re-add` **只在主力機做** —— 兩台都 re-add + push 就會開始打架。
+
 ### 新增 brew 套件
-編輯 `Brewfile`（CLI）或 `Brewfile.gui`（cask），下次 `chezmoi apply` 會自動重跑 brew bundle
+編輯 `Brewfile`（CLI）或 `Brewfile.gui`（cask），下次 apply 會自動重跑 brew bundle
 —— 靠的是 `run_onchange_after_10-brew.sh.tmpl` 裡的 Brewfile hash 行。
+**Brewfile 沒改就不會跑**（實測驗證，見 DECISIONS.md）。
+
+### 新增 zsh plugin
+只改 `.chezmoidata.yaml`。`.zshrc` 的 `plugins=()` 和 external 的下載清單都從那裡產生。
 
 ### 新增檔案
 ```bash

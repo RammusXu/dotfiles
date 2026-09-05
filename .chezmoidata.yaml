@@ -1,0 +1,23 @@
+# zsh plugin 的單一事實來源。
+#
+# 改這裡就好：.zshrc 的 plugins=() 和 .chezmoiexternal.toml 要抓哪些 oh-my-zsh
+# 子目錄，兩邊都從這份清單產生。不會出現「加了 plugin 卻忘了讓 chezmoi 抓下來」。
+
+# oh-my-zsh 內建 plugin（住在 ~/.oh-my-zsh/plugins/）
+omzPlugins:
+  - git
+  - docker
+  - zoxide
+  - fzf
+  - terraform
+  - gcloud
+  - nvm
+  - node
+  - uv
+
+# 自訂 plugin（住在 ~/.omz-custom/plugins/，由 .chezmoiexternal 或本 repo 提供）
+# 順序有意義：zsh-syntax-highlighting 必須是最後一個。
+customPlugins:
+  - chezmoi
+  - zsh-autosuggestions
+  - zsh-syntax-highlighting
