@@ -1,0 +1,30 @@
+# 由 chezmoi 管理。這裡只有 host alias 與 key 路徑，沒有任何私鑰。
+#
+# 用法：remote 寫成 git@github-work:eslitecorp/repo.git
+#      這樣「用哪把 key」由 remote URL 決定，不會兩個帳號互相打架。
+#
+# 但注意：新機 bootstrap 時還沒有任何 key，所以 chezmoi 本身
+#        一律走 HTTPS clone（見 docs/DECISIONS.md）。
+
+Host *
+    AddKeysToAgent yes
+    UseKeychain yes
+    ServerAliveInterval 60
+
+Host github-work
+    HostName github.com
+    User git
+    IdentityFile {{ .chezmoi.homeDir }}/.ssh/id_ed25519_work
+    IdentitiesOnly yes
+
+Host github-personal
+    HostName github.com
+    User git
+    IdentityFile {{ .chezmoi.homeDir }}/.ssh/id_ed25519_personal
+    IdentitiesOnly yes
+
+Host gitlab-work
+    HostName gitlab.com
+    User git
+    IdentityFile {{ .chezmoi.homeDir }}/.ssh/id_ed25519_work
+    IdentitiesOnly yes

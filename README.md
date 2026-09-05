@@ -1,6 +1,9 @@
 # dotfiles
 
-chezmoi + Homebrew。一台新 Mac 從開機到能寫程式，理想上只要兩個指令。
+chezmoi + Homebrew。一台新 Mac 從開機到能寫程式，理想上只要三個指令。
+
+**這是 public repo，裡面沒有任何 secret。** 為什麼這樣設計、以及所有技術選擇的理由，
+見 [`docs/DECISIONS.md`](docs/DECISIONS.md)。
 
 ## 新機開機（Bootstrap）
 
@@ -17,7 +20,14 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply rammusxu
 | `role` | `primary` = 日常主力機（裝 GUI app）/ `runner` = 備援背景機（只裝 CLI） |
 | `isWork` | 誠品工作機填 `yes` → git 身分用 `rammusxu@eslite.com` |
 
-跑完之後**還要手動做的事**，見下方「換機待辦」。
+**第二步（補 secret）**：
+
+```bash
+export BW_SESSION=$(bw unlock --raw)
+~/.local/share/chezmoi/scripts/secrets-restore.sh
+```
+
+bootstrap 不會因為缺 secret 而失敗 —— apply 完會印出一份檢查清單告訴你還缺什麼。
 
 ## 這個 repo 的結構
 
@@ -34,11 +44,17 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply rammusxu
 | `run_once_after_30-install-gcloud.sh.tmpl` | gcloud 官方 archive 安裝 |
 | `scripts/brewfile-audit.sh` | 比對機器實際狀態 vs Brewfile |
 | `scripts/macos-defaults-dump.sh` | 舊機 dump 系統偏好當參考 |
+| `scripts/secrets-restore.sh` | 從 Bitwarden 還原 `~/.env` |
+| `.githooks/pre-commit` | gitleaks + pattern 檢查，擋 secret 進 public repo |
+| `private_dot_ssh/private_config.tmpl` | SSH host alias（work / personal 分流）|
+| `docs/DECISIONS.md` | **為什麼是這樣做** —— 技術選擇與 FAQ |
 
 ## 換機待辦（chezmoi 管不到的）
 
-- [ ] 複製舊機的 `~/.env`（**刻意不進版控**，裡面是 secrets）
-- [ ] SSH key：建議新機產新的並上傳 GitHub / GitLab，舊 key 留在舊機
+- [ ] `~/.env`：走 Bitwarden → `scripts/secrets-restore.sh`（**刻意不進版控**）
+- [ ] `gh auth login`（選 HTTPS）→ `gh auth setup-git`
+- [ ] SSH key：新機產新的並上傳，舊 key 留在舊機。
+      remote 用 host alias（`git@github-work:...`），身分才不會打架
 - [ ] `Brewfile.manual` 裡的項目（Docker Desktop 授權、Rectangle 輔助使用權限、Xnip、Orca）
 - [ ] 2FA / Authenticator 轉移
 - [ ] VS Code：開 Settings Sync，或 `code --list-extensions` 手動補

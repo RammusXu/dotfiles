@@ -5,6 +5,8 @@ Makefile
 LICENSE
 images
 scripts
+docs
+.githooks
 .ruby-lsp
 *.tar.gz
 

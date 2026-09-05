@@ -1,0 +1,9 @@
+#!/bin/bash
+# 把 chezmoi source repo 的 hooksPath 指到版控裡的 .githooks，
+# 這樣 pre-commit 的防洩漏檢查在每台機器上都會自動生效，不需要手動 install。
+set -euo pipefail
+SRC="{{ .chezmoi.sourceDir }}"
+if [ -d "$SRC/.git" ]; then
+  git -C "$SRC" config core.hooksPath .githooks
+  echo "==> 🪝 pre-commit 防洩漏 hook 已啟用"
+fi

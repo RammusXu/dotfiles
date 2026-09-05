@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# 這是一個 public repo。任何 secret 一旦 commit 就等於外洩，
+# 事後 rebase 也救不回來（GitHub 會保留 dangling object，爬蟲更快）。
+#
+# 為什麼要有這一層：chezmoi 的 `chezmoi add` 很容易手滑把含 token 的檔案吸進來，
+# 而這個 repo 沒有 CI 可以擋。唯一能在「送出去之前」攔截的地方就是這裡。
+set -uo pipefail
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+FAIL=0
+
+# --- 1. 絕對不該進版控的檔名 ---
+while IFS= read -r f; do
+  case "$f" in
+    *.env|.env|*id_rsa|*id_ed25519|*.pem|*.p12|*.pfx|*key.txt|*.kdbx|*credentials.json|*service-account*.json)
+      echo "❌ 檔名看起來是密鑰或憑證: $f"
+      FAIL=1 ;;
+  esac
+done <<< "$STAGED"
+
+# --- 2. 內容 pattern（gitleaks 沒裝時的 fallback）---
+PATTERNS='(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk-[A-Za-z0-9]{32,}|AIza[0-9A-Za-z_-]{35})'
+if git diff --cached -U0 | grep -nE "^\+" | grep -qE "$PATTERNS"; then
+  echo "❌ diff 裡出現疑似憑證的字串："
+  git diff --cached -U0 | grep -nE "^\+" | grep -oE "$PATTERNS" | sort -u | sed 's/^/     /'
+  FAIL=1
+fi
+
+# --- 3. gitleaks（有裝就用，權威來源）---
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner || FAIL=1
+else
+  echo "ℹ️  gitleaks 未安裝，只跑了基本 pattern 檢查（brew install gitleaks）"
+fi
+
+if [ "$FAIL" -ne 0 ]; then
+  cat <<'MSG'
+
+commit 已擋下。
+
+  這是 public repo，secret 進去就等於外洩。
+  正確做法：把值放進 Bitwarden，檔案本身留在 $HOME 不進版控
+            （做法見 docs/DECISIONS.md「Secret 策略」）
+
+  確定是誤判才用： git commit --no-verify
+MSG
+  exit 1
+fi
+exit 0

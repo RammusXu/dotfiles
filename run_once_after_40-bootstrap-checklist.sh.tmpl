@@ -1,0 +1,24 @@
+#!/bin/bash
+# 新機 apply 完之後印一份「chezmoi 管不到的」待辦。
+# 刻意全部只檢查不失敗 —— bootstrap 不該因為少一個 secret 就整個中斷。
+set -uo pipefail
+H="{{ .chezmoi.homeDir }}"
+echo
+echo "──────────── bootstrap 檢查 ────────────"
+
+[ -f "$H/.env" ] \
+  && echo "  ✅ ~/.env" \
+  || echo "  ⬜ ~/.env  →  export BW_SESSION=\$(bw unlock --raw) && {{ .chezmoi.sourceDir }}/scripts/secrets-restore.sh"
+
+ls "$H"/.ssh/id_* >/dev/null 2>&1 \
+  && echo "  ✅ SSH key" \
+  || echo "  ⬜ SSH key →  ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work -C 'rammusxu@eslite.com'"
+
+gh auth status >/dev/null 2>&1 \
+  && echo "  ✅ gh 已登入" \
+  || echo "  ⬜ gh 登入  →  gh auth login  (選 HTTPS) && gh auth setup-git"
+
+echo "  ⬜ Brewfile.manual：Docker Desktop 授權、Xnip (MAS)、Orca"
+echo "  ⬜ Dock 排列 / 輸入法（手動，3 分鐘）"
+echo "────────────────────────────────────────"
+echo

@@ -11,6 +11,11 @@ brew "zsh-syntax-highlighting"
 brew "fzf"
 brew "zoxide"
 
+# --- secrets / 安全 ---
+brew "gitleaks"        # pre-commit hook 用它擋 secret 進 public repo
+brew "bitwarden-cli"   # 新機還原 ~/.env（scripts/secrets-restore.sh）
+brew "age"             # 備用：真的非得進版控的加密檔才用
+
 # --- core cli ---
 brew "git"
 brew "gh"
