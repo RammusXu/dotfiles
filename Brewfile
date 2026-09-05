@@ -1,52 +1,75 @@
-# taps
-# tap "homebrew/core"
-# tap "homebrew/cask"
+# CLI 工具 — primary 與 runner 都會裝。
+# 這份清單是 2026-09 依實際 /opt/homebrew/Cellar 內容重建的，
+# 不是手寫累積。要對齊實際狀態請跑 scripts/brewfile-audit.sh。
+
 tap "homebrew/bundle"
-# tap "homebrew/cask-fonts" # 從舊腳本中提取，可選
 
-# CLI tools
-
-# zsh
+# --- shell ---
 brew "zsh"
 brew "zsh-autosuggestions"
 brew "zsh-syntax-highlighting"
 brew "fzf"
 brew "zoxide"
 
-# k8s
-brew "kubernetes-cli"
-brew "kustomize"
-brew "k9s"
-brew "kubectx"
-brew "helm"
-brew "k3d"
-
-# devops
+# --- core cli ---
 brew "git"
-brew "jq"
-brew "tree"
-brew "htop"
-brew "httpie"
-brew "bat"
-brew "uv"
-brew "terraform"
 brew "gh"
-
-# aws
-# saml2aws
-# eksctl
-
-# others
+brew "glab"
+brew "jq"
+brew "yq"
+brew "tree"
+brew "bat"
+brew "ripgrep"
+brew "htop"
 brew "wget"
 brew "curl"
+brew "httpie"
+brew "mtr"
+brew "telnet"
+brew "pandoc"
 
-# developer
-brew "rbenv"
+# --- kubernetes ---
+brew "kubernetes-cli"
+brew "kubectx"
+brew "kustomize"
+brew "helm"
+brew "k9s"
+brew "k3d"
+brew "minikube"
+brew "argocd"
+
+# --- iac / cloud ---
+brew "opentofu"
+brew "terraform"
+brew "terraformer"
+brew "awscli"
+brew "azure-cli"
+brew "eksctl"
+brew "saml2aws"
+brew "step"
+brew "jwt-cli"
+brew "grpcurl"
+
+# --- containers ---
+brew "docker-compose"
+brew "podman"
+
+# --- languages / runtimes ---
 brew "go"
+brew "node"
+brew "nvm"
+brew "uv"
+brew "pipx"
+brew "rbenv"
+brew "ruby-build"
 
-# Applications
-cask "google-chrome"
-cask "visual-studio-code"
-cask "gcloud-cli"
+# --- data ---
+brew "postgresql@17"
 
-# Optional: Add more packages as needed
+# --- docs / diagrams ---
+brew "d2"
+brew "graphviz"
+brew "cue"
+
+# --- ai cli ---
+brew "gemini-cli"

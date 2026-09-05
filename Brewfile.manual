@@ -1,0 +1,14 @@
+# 這份 **不會** 被自動執行。放的是需要人在場、或 brew 管不到的東西。
+# 新機照著手動跑一次，跑完在 README 打勾。
+
+# === 需要 sudo / 系統授權，不能放進無人值守的 script ===
+# brew install --cask docker-desktop     # 需要授權安裝 privileged helper
+# brew install --cask rectangle          # 需要「輔助使用」權限才能動視窗
+
+# === Homebrew 沒有的（Mac App Store 或官網 dmg）===
+# Xnip           → Mac App Store（Homebrew 政策不收 MAS app）
+# Orca           → brew install --cask stablyai/orca/orca
+#                  ⚠️ 不要用 `brew install --cask orca`，那是已停用的 Plotly Orca
+
+# === 刻意不用 brew 裝 ===
+# gcloud CLI     → 官方 archive，見 run_onchange_after_30-gcloud.sh

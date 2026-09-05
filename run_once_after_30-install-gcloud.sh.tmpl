@@ -1,0 +1,32 @@
+{{- if (eq .chezmoi.os "darwin") -}}
+#!/bin/bash
+set -euo pipefail
+
+# gcloud 刻意不用 homebrew cask。
+# cask 版 depends_on python@3.x，Homebrew 升 Python minor 版時 gcloud 會跟著壞
+# （macOS 上 gcloud 最常見的故障原因）。官方 archive 自帶 bundled Python，完全解耦。
+# 之後更新一律走：gcloud components update
+
+SDK_DIR="{{ .chezmoi.homeDir }}/google-cloud-sdk"
+
+if [ -d "$SDK_DIR" ]; then
+  echo "==> ⏭  google-cloud-sdk 已存在，略過"
+  exit 0
+fi
+
+ARCH="$(uname -m)"
+case "$ARCH" in
+  arm64) PKG="google-cloud-cli-darwin-arm.tar.gz" ;;
+  x86_64) PKG="google-cloud-cli-darwin-x86_64.tar.gz" ;;
+  *) echo "unsupported arch: $ARCH"; exit 1 ;;
+esac
+
+TMP="$(mktemp -d)"
+echo "==> ☁️  下載 $PKG"
+curl -fsSL -o "$TMP/$PKG" "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/$PKG"
+tar -xf "$TMP/$PKG" -C "{{ .chezmoi.homeDir }}"
+rm -rf "$TMP"
+
+"$SDK_DIR/install.sh" --quiet --command-completion true --path-update false
+echo "==> ✅ gcloud 裝好了。PATH 由 ~/.common_env 負責載入。"
+{{- end -}}

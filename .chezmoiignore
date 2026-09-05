@@ -1,2 +1,19 @@
-*.tar.gz
+{{- $role := "primary" -}}{{- if hasKey . "role" -}}{{- $role = .role -}}{{- end -}}
+# --- repo-only files: 絕對不要 apply 到 $HOME ---
 README.md
+Makefile
+LICENSE
+images
+scripts
+.ruby-lsp
+*.tar.gz
+
+# Brewfile 由 run_onchange_after_10-brew.sh 讀取，不是要放進 $HOME 的檔案
+Brewfile
+Brewfile.gui
+Brewfile.manual
+
+{{ if ne $role "primary" }}
+# runner（背景機）不需要 GUI 相關設定
+.p10k.zsh
+{{ end }}

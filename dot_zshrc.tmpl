@@ -82,7 +82,9 @@ ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git chezmoi docker zoxide zsh-autosuggestions fzf terraform gcloud nvm node uv)
+# zsh-syntax-highlighting 必須放在最後一個。
+# 舊設定裡 brew 裝了 zsh-syntax-highlighting 卻沒有載入，等於白裝。
+plugins=(git chezmoi docker zoxide fzf terraform gcloud nvm node uv zsh-autosuggestions zsh-syntax-highlighting)
 
 # Lazy-load nvm: avoids sourcing nvm.sh + scanning for .nvmrc on every shell
 # startup (~1.3s in profiling). nvm/node/npm still work, just load on first use.
@@ -108,22 +110,20 @@ source $ZSH/oh-my-zsh.sh
 if type brew &>/dev/null
 then
   FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+fi
 
-  autoload -Uz compinit
+# compinit：一天只重建一次 dump，其餘啟動走 cache（-C 跳過安全檢查）
+autoload -Uz compinit
+if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
   compinit
+else
+  compinit -C
 fi
 
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
-# bun completions
+# bun completions（BUN_INSTALL / PATH 已統一在 .common_env 設定）
 [ -s "{{ .chezmoi.homeDir }}/.bun/_bun" ] && source "{{ .chezmoi.homeDir }}/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
 # CF CLI completions
 [[ -f "{{ .chezmoi.homeDir }}/.config/cf/completions/_cf.zsh" ]] && source "{{ .chezmoi.homeDir }}/.config/cf/completions/_cf.zsh"
 
-
-# Added by Antigravity CLI installer (guarded against duplicate PATH entries)
-case ":$PATH:" in *":{{ .chezmoi.homeDir }}/.local/bin:"*) ;; *) export PATH="{{ .chezmoi.homeDir }}/.local/bin:$PATH" ;; esac

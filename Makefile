@@ -1,17 +1,16 @@
-OMZ_PLUGIN_PATH=$$(chezmoi source-path)/dot_omz-custom/plugins
+# oh-my-zsh / powerlevel10k / zsh plugins 已改由 .chezmoiexternal.toml 管理，
+# 不再需要手動下載 tarball + chezmoi import。
+#
+# 強制重抓上游：
+#   make refresh
 
+.PHONY: refresh audit diff
 
-all: \
-	update-oh-my-zsh \
-	update-plugins
+refresh:
+	chezmoi apply --refresh-externals
 
-update-oh-my-zsh:
-	curl -s -L -o oh-my-zsh-master.tar.gz https://github.com/robbyrussell/oh-my-zsh/archive/master.tar.gz
-	chezmoi import --strip-components 1 --destination ${HOME}/.oh-my-zsh oh-my-zsh-master.tar.gz
+audit:
+	./scripts/brewfile-audit.sh
 
-update-plugins: \
-	update-plugins-chezmoi
-
-update-plugins-chezmoi:
-	mkdir -p ${OMZ_PLUGIN_PATH}/chezmoi
-	chezmoi completion zsh > ${OMZ_PLUGIN_PATH}/chezmoi/_chezmoi
+diff:
+	chezmoi diff

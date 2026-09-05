@@ -1,0 +1,7 @@
+{{- /* 換機/多機設定：init 時問一次，答案存在 ~/.config/chezmoi/chezmoi.toml */ -}}
+{{- $role := promptStringOnce . "role" "Machine role (primary = 日常主力機 / runner = 備援背景機)" "primary" -}}
+{{- $isWork := promptBoolOnce . "isWork" "這台是誠品的工作機嗎" -}}
+
+[data]
+    role = {{ $role | quote }}
+    isWork = {{ $isWork }}

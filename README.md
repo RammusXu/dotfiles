@@ -1,94 +1,75 @@
 # dotfiles
 
-![demo](./images/demo.png)
+chezmoi + Homebrew。一台新 Mac 從開機到能寫程式，理想上只要兩個指令。
 
-## FAQ
-
-### 如何在新 Mac 上安裝 chezmoi？
-```
-sh -c "$(curl -fsLS git.io/chezmoi)" -- init --apply rammusxu
-```
-
-雖然也可以用 `brew install chezmoi` 安裝，但是有可能是新的機器，或是 Linux 機器，為了一致性，所以都用 `curl` 安裝。
-
-
-
-### 如何更新 chezmoi？
-```bash
-chezmoi update
-```
-path: .local/share/chezmoi
-
-`chezmoi update` 會將你的 dotfiles 更新到最新狀態。如果你想將本地的變更應用到實際檔案，可以使用 `chezmoi apply`。
-
-
-### 如何取得/更新 oh-my-zsh？
-不要開啟 .oh-my-zsh 的自動更新，不然 git commit 會很亂。
-
-https://github.com/twpayne/chezmoi/blob/master/docs/HOWTO.md#include-a-subdirectory-from-another-repository-like-oh-my-zsh
+## 新機開機（Bootstrap）
 
 ```bash
-make
+xcode-select --install
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply rammusxu
 ```
 
-### 如何更改 ZSH_CUSTOM 資料夾？
-不要用 `.oh-my-zsh/custom` 當作預設，因為更新 `.oh-my-zsh` 的時候會被覆蓋掉。
+`init` 會問兩個問題：
 
-`dot_zshrc.tmpl`
-```
-ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
-```
+| 問題 | 答法 |
+|---|---|
+| `role` | `primary` = 日常主力機（裝 GUI app）/ `runner` = 備援背景機（只裝 CLI） |
+| `isWork` | 誠品工作機填 `yes` → git 身分用 `rammusxu@eslite.com` |
 
-### 如何新增 brew formula 或 cask？
-https://www.chezmoi.io/docs/how-to/#use-chezmoi-on-macos
+跑完之後**還要手動做的事**，見下方「換機待辦」。
 
-編輯 `./Brewfile`
+## 這個 repo 的結構
 
-### 如何新增檔案到 chezmoi？
-```
-chezmoi add ~/.zsh_alias.zsh
-chezmoi add --autotemplate ~/.zsh_alias.zsh
-```
+| 檔案 | 作用 |
+|---|---|
+| `.chezmoi.toml.tmpl` | init 時問 role / isWork，決定這台機器裝什麼 |
+| `.chezmoiexternal.toml` | oh-my-zsh、powerlevel10k、zsh plugins 由 chezmoi 直接抓上游 |
+| `.chezmoiignore` | 擋掉 repo-only 檔案，避免被 apply 到 `$HOME` |
+| `Brewfile` | CLI 工具，兩種 role 都裝 |
+| `Brewfile.gui` | GUI cask，只有 `role=primary` 裝 |
+| `Brewfile.manual` | 需要 sudo / MAS / 非 brew 的東西。**不會自動執行** |
+| `run_onchange_after_10-brew.sh.tmpl` | 跑 brew bundle。含 Brewfile hash 觸發 |
+| `run_onchange_after_20-macos-defaults.sh.tmpl` | macOS 系統偏好 |
+| `run_once_after_30-install-gcloud.sh.tmpl` | gcloud 官方 archive 安裝 |
+| `scripts/brewfile-audit.sh` | 比對機器實際狀態 vs Brewfile |
+| `scripts/macos-defaults-dump.sh` | 舊機 dump 系統偏好當參考 |
 
-### 如何新增自訂插件？
-```
-NEW_PLUGIN=chezmoi
-NEW_PLUGIN_PATH=$(chezmoi source-path)/dot_omz-custom/plugins/$NEW_PLUGIN
+## 換機待辦（chezmoi 管不到的）
 
-mkdir -p $NEW_PLUGIN_PATH
-chezmoi completion zsh > $NEW_PLUGIN_PATH/_$NEW_PLUGIN
-```
+- [ ] 複製舊機的 `~/.env`（**刻意不進版控**，裡面是 secrets）
+- [ ] SSH key：建議新機產新的並上傳 GitHub / GitLab，舊 key 留在舊機
+- [ ] `Brewfile.manual` 裡的項目（Docker Desktop 授權、Rectangle 輔助使用權限、Xnip、Orca）
+- [ ] 2FA / Authenticator 轉移
+- [ ] VS Code：開 Settings Sync，或 `code --list-extensions` 手動補
+- [ ] Obsidian vault 與 `.obsidian/` plugin 設定
+- [ ] Dock 排列、輸入法 —— 手動排，不用 script
 
-### 如何新增 oh-my-zsh 主題？
-```
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM}/themes/powerlevel10k
-chezmoi add -r ${ZSH_CUSTOM}
-chezmoi cd
-git add dot_omz-custom
-```
-在 `~/.zshrc` 中設定 `ZSH_THEME="powerlevel10k/powerlevel10k"`。
+## 日常操作
 
-### 如何設定 .ssh/config？
-```
-# GitLab.com
-Host gitlab.com
-  PreferredAuthentications publickey
-  IdentityFile ~/.ssh/gitlab_com
-
-# Github.com
-Host github.com
-  PreferredAuthentications publickey
-  IdentityFile ~/.ssh/github_com
+```bash
+chezmoi diff                    # 看會改什麼（apply 前一定先跑）
+chezmoi apply                   # 套用
+chezmoi update                  # pull + apply
+make refresh                    # 強制重抓 oh-my-zsh / p10k 上游
+make audit                      # 比對 Brewfile 和機器實際狀態
 ```
 
-## 其他設定
+### 新增 brew 套件
+編輯 `Brewfile`（CLI）或 `Brewfile.gui`（cask），下次 `chezmoi apply` 會自動重跑 brew bundle
+—— 靠的是 `run_onchange_after_10-brew.sh.tmpl` 裡的 Brewfile hash 行。
 
-### iTerm 設定
-> Credit: https://apple.stackexchange.com/questions/136928/using-alt-cmd-right-left-arrow-in-iterm/136931
+### 新增檔案
+```bash
+chezmoi add ~/.foo
+chezmoi add --autotemplate ~/.foo   # 需要跨機器變動時
+```
 
-Preferences -> Profiles -> Keys -> Key Mappings -> Presets: `Natural Text Editing`
+## 兩台機器的同步紀律
 
-![iterm-keys](./images/iterm-keys.png)
+**新機是唯一的 source of truth。**
 
-### Visual Studio Code 設定
-Visual Studio Code: Open File → Preferences → Settings, enter terminal.integrated.fontFamily in the search box and set the value to MesloLGS NF.
+- 新機：`chezmoi add` / `re-add` → commit → push
+- 舊機：**只** `chezmoi update`，不 re-add、不 push
+
+兩台都往上推，遲早會遇到不想在半夜 debug 的 merge conflict。

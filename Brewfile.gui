@@ -1,0 +1,26 @@
+# GUI 應用程式 — 只有 role = primary 的機器會裝。
+# 這些 cask 幾乎都是 auto_updates true，讓 app 自己更新，
+# 不要用 `brew upgrade --cask --greedy` 去接管它們。
+
+# --- 每天在用 ---
+cask "google-chrome"
+cask "visual-studio-code"
+cask "obsidian"
+cask "linear-linear"          # 注意 token 是 linear-linear，不是 linear
+cask "bitwarden"
+cask "ghostty"
+cask "claude-code"
+
+# --- dev ---
+cask "docker-desktop"         # 首次啟動需要授權，見 Brewfile.manual
+cask "session-manager-plugin"
+
+# --- 通訊 ---
+cask "telegram"
+
+# --- 待確認：見 README「換機待決事項」 ---
+# cask "iterm2"               # 已有 ghostty + cmux，三個終端機留一個就好
+# cask "cmux"
+# cask "mactex"               # 約 5-7GB，確定還在用再裝
+# cask "rar"
+# cask "powershell"

@@ -1,0 +1,25 @@
+{{- if (eq .chezmoi.os "darwin") -}}
+{{- $role := "primary" -}}{{- if hasKey . "role" -}}{{- $role = .role -}}{{- end -}}
+#!/bin/bash
+set -euo pipefail
+
+# 這幾行 hash 是觸發器：Brewfile 內容一變，這支 script 的 render 結果就變，
+# chezmoi 才會重跑。舊版少了這段，所以改 Brewfile 從來不會生效。
+# Brewfile     hash: {{ include "Brewfile"        | sha256sum }}
+# Brewfile.gui hash: {{ include "Brewfile.gui"    | sha256sum }}
+
+command -v brew >/dev/null 2>&1 || \
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+echo "==> 🍺 brew bundle (CLI)"
+brew bundle --file="{{ .chezmoi.sourceDir }}/Brewfile"
+
+{{ if eq $role "primary" }}
+echo "==> 🖥  brew bundle (GUI casks — primary only)"
+brew bundle --file="{{ .chezmoi.sourceDir }}/Brewfile.gui"
+{{ else }}
+echo "==> ⏭  role={{ $role }}，略過 GUI casks"
+{{ end }}
+
+echo "==> ✅ brew bundle 完成。需要 sudo / MAS 的項目請見 Brewfile.manual"
+{{- end -}}
