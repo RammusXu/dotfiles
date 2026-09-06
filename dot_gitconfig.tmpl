@@ -1,13 +1,27 @@
-{{- /* 身分由「目錄」決定，不靠 hostname、也不靠記憶手動切。 */ -}}
+{{- /* 尚未重新 chezmoi init 的機器 fallback 回舊的 hostname 判斷，避免身分被誤切 */ -}}
+{{- $isWork := contains "rammusxu" .chezmoi.hostname -}}
+{{- if hasKey . "isWork" }}{{ $isWork = .isWork }}{{ end -}}
 [user]
-    # 沒有預設身分。在沒被下面 includeIf 覆蓋到的目錄裡 commit 會直接報錯，
-    # 而不是安靜地用錯的 email 送出去 —— 這正是我們要的行為。
-    useConfigOnly = true
+{{- if $isWork }}
+    name = rammusxu-eslite
+    email = rammusxu@eslite.com
+{{- else }}
+    name = RammusXu
+    email = comte_ken@hotmail.com
+{{- end }}
 
+# 身分由目錄決定。git 的 includeIf 是「後者覆蓋前者」，所以順序有意義：
+# 先用 ~/workspace/ 一律套公司身分，再把裡面少數的個人 repo 挑回來。
 [includeIf "gitdir:{{ .chezmoi.homeDir }}/workspace/"]
     path = {{ .chezmoi.homeDir }}/.gitconfig-work
 [includeIf "gitdir:{{ .chezmoi.homeDir }}/personal/"]
     path = {{ .chezmoi.homeDir }}/.gitconfig-personal
+
+# --- 例外：住在 ~/workspace/ 底下但屬於個人的 repo ---
+# dotfiles 是 public 的個人 repo，不能用公司 email commit。
+[includeIf "gitdir:{{ .chezmoi.homeDir }}/workspace/dotfiles/"]
+    path = {{ .chezmoi.homeDir }}/.gitconfig-personal
+# chezmoi 的執行目錄（不是編輯位置，但偶爾會在那裡 commit）
 [includeIf "gitdir:{{ .chezmoi.homeDir }}/.local/share/chezmoi/"]
     path = {{ .chezmoi.homeDir }}/.gitconfig-personal
 

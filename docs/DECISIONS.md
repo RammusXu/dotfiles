@@ -82,6 +82,47 @@ diff 乾淨了，`git log` 也不再被上游的 commit 淹沒。
 template 裡保留 fallback：舊機還沒重新 init 時，`hasKey` 判斷不到就退回原本的
 hostname 邏輯，不會壞。
 
+## 為什麼 source dir 設在 ~/workspace/dotfiles
+
+chezmoi 預設把 source dir 放在 `~/.local/share/chezmoi`。那個位置有兩個問題:
+
+1. **不是你會打開來編輯的地方。** 實際上人會在 `~/workspace/dotfiles` clone 一份來改,
+   結果同一個 repo 有兩份 clone。
+2. **`chezmoi add` / `re-add` 會寫進「執行」那一份**,你在「編輯」那一份看不到。
+   兩邊開始漂移,而且是安靜地漂移。
+
+所以 `.chezmoi.toml.tmpl` 用 `sourceDir` 把它指回 `~/workspace/dotfiles`,只留一份。
+
+### 代價:bootstrap 一定要帶 `--source`
+
+實測 chezmoi v2.66.1 的行為(兩個方向都試過):
+
+| 指令 | 結果 |
+|---|---|
+| `chezmoi init --source=~/workspace/dotfiles <repo>` | clone 到 workspace,config 產生 `sourceDir`,之後所有指令不用再帶 flag ✅ |
+| `chezmoi init <repo>`(忘了帶) | clone 到 `~/.local/share/chezmoi`,但 config 指向 `~/workspace/dotfiles`(空的)→ `chezmoi managed` 空白,**且不報錯** ❌ |
+
+`--source` **只在 init 那一次有作用**,它不會被寫進 config —— 所以 `sourceDir` 必須
+自己寫在 `.chezmoi.toml.tmpl` 裡。兩者缺一不可。
+
+失敗是靜默的,所以 README 的 bootstrap 指令把 `--source` 標成不可省略。
+
+## 個人 repo 住在 ~/workspace/ 底下的身分陷阱
+
+`dot_gitconfig.tmpl` 的規則是 `~/workspace/` → 公司身分。但 **dotfiles 這個 public
+的個人 repo 就住在 `~/workspace/dotfiles`** —— 照規則會用公司 email commit 到個人 repo。
+
+git 的 `includeIf` 是**後者覆蓋前者**,所以順序解決這件事:
+
+```gitconfig
+[includeIf "gitdir:~/workspace/"]          # 先一律套公司身分
+    path = ~/.gitconfig-work
+[includeIf "gitdir:~/workspace/dotfiles/"] # 再把個人 repo 挑回來
+    path = ~/.gitconfig-personal
+```
+
+以後只要有個人專案放進 `~/workspace/`,就在這裡補一行例外。
+
 ## Secret 策略：不加密，是根本不放
 
 這是 **public repo**。三個選項：
