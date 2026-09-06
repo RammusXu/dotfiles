@@ -82,16 +82,16 @@ diff 乾淨了，`git log` 也不再被上游的 commit 淹沒。
 template 裡保留 fallback：舊機還沒重新 init 時，`hasKey` 判斷不到就退回原本的
 hostname 邏輯，不會壞。
 
-## 為什麼 source dir 設在 ~/workspace/dotfiles
+## 為什麼 source dir 設在 ~/personal/dotfiles
 
 chezmoi 預設把 source dir 放在 `~/.local/share/chezmoi`。那個位置有兩個問題:
 
-1. **不是你會打開來編輯的地方。** 實際上人會在 `~/workspace/dotfiles` clone 一份來改,
+1. **不是你會打開來編輯的地方。** 實際上人會另外 clone 一份來改,
    結果同一個 repo 有兩份 clone。
 2. **`chezmoi add` / `re-add` 會寫進「執行」那一份**,你在「編輯」那一份看不到。
    兩邊開始漂移,而且是安靜地漂移。
 
-所以 `.chezmoi.toml.tmpl` 用 `sourceDir` 把它指回 `~/workspace/dotfiles`,只留一份。
+所以 `.chezmoi.toml.tmpl` 用 `sourceDir` 把它指回 `~/personal/dotfiles`,只留一份。
 
 ### 代價:bootstrap 一定要帶 `--source`
 
@@ -99,20 +99,20 @@ chezmoi 預設把 source dir 放在 `~/.local/share/chezmoi`。那個位置有�
 
 | 指令 | 結果 |
 |---|---|
-| `chezmoi init --source=~/workspace/dotfiles <repo>` | clone 到 workspace,config 產生 `sourceDir`,之後所有指令不用再帶 flag ✅ |
-| `chezmoi init <repo>`(忘了帶) | clone 到 `~/.local/share/chezmoi`,但 config 指向 `~/workspace/dotfiles`(空的)→ `chezmoi managed` 空白,**且不報錯** ❌ |
+| `chezmoi init --source=~/personal/dotfiles <repo>` | clone 到 `~/personal/dotfiles`,config 產生 `sourceDir`,之後所有指令不用再帶 flag ✅ |
+| `chezmoi init <repo>`(忘了帶) | clone 到 `~/.local/share/chezmoi`,但 config 指向 `~/personal/dotfiles`(空的)→ `chezmoi managed` 空白,**且不報錯** ❌ |
 
 `--source` **只在 init 那一次有作用**,它不會被寫進 config —— 所以 `sourceDir` 必須
 自己寫在 `.chezmoi.toml.tmpl` 裡。兩者缺一不可。
 
 失敗是靜默的,所以 README 的 bootstrap 指令把 `--source` 標成不可省略。
 
-## 個人 repo 住在 ~/workspace/ 底下的身分陷阱
+## 為什麼 dotfiles 放 ~/personal/ 而不是 ~/workspace/
 
-`dot_gitconfig.tmpl` 的規則是 `~/workspace/` → 公司身分。但 **dotfiles 這個 public
-的個人 repo 就住在 `~/workspace/dotfiles`** —— 照規則會用公司 email commit 到個人 repo。
+身分規則是 `~/workspace/` → 公司、`~/personal/` → 個人。dotfiles 是 **public 的個人 repo**,
+放在 `~/workspace/` 底下就會用公司 email commit 到自己的公開 repo。
 
-git 的 `includeIf` 是**後者覆蓋前者**,所以順序解決這件事:
+一度用 `includeIf` 補例外解決(git 的 includeIf 是後者覆蓋前者):
 
 ```gitconfig
 [includeIf "gitdir:~/workspace/"]          # 先一律套公司身分
@@ -121,7 +121,12 @@ git 的 `includeIf` 是**後者覆蓋前者**,所以順序解決這件事:
     path = ~/.gitconfig-personal
 ```
 
-以後只要有個人專案放進 `~/workspace/`,就在這裡補一行例外。
+**但更好的解法是把 repo 搬走。** 例外會累積 —— 每多一個放錯地方的個人專案就多一行,
+而且新機 clone 時很容易忘記照抄。搬到 `~/personal/dotfiles` 之後,
+一條規則對一個目錄,`dot_gitconfig.tmpl` 裡一個例外都不需要。
+
+規則:**目錄結構決定身分,不要用設定去修補放錯位置的東西。**
+真的有個人專案不得不待在 `~/workspace/`,才用上面的 includeIf 補例外。
 
 ## Secret 策略：不加密，是根本不放
 

@@ -10,12 +10,12 @@ chezmoi + Homebrew。一台新 Mac 從開機到能寫程式，理想上只要三
 ```bash
 xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply --source=~/workspace/dotfiles rammusxu
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply --source=~/personal/dotfiles rammusxu
 ```
 
-> **`--source` 不能省。** 這個 repo 把 chezmoi 的 source dir 設成 `~/workspace/dotfiles`
+> **`--source` 不能省。** 這個 repo 把 chezmoi 的 source dir 設成 `~/personal/dotfiles`
 > （見 `.chezmoi.toml.tmpl`），所以 clone 的位置必須一致。忘了帶的話 chezmoi 會 clone 到
-> 預設的 `~/.local/share/chezmoi`，但 config 指向 `~/workspace/dotfiles`（空的）——
+> 預設的 `~/.local/share/chezmoi`，但 config 指向 `~/personal/dotfiles`（空的）——
 > 症狀是 `chezmoi managed` 什麼都沒有，而且**不會報錯**。
 
 `init` 會問兩個問題：
@@ -36,17 +36,17 @@ bootstrap 不會因為缺 secret 而失敗 —— apply 完會印出一份檢查
 
 ## 編輯位置只有一個
 
-**`~/workspace/dotfiles`。** 這裡同時是你 `git` 編輯的地方，也是 chezmoi 的 source dir。
+**`~/personal/dotfiles`。** 這裡同時是你 `git` 編輯的地方，也是 chezmoi 的 source dir。
 
-chezmoi 預設會把 source dir 放在 `~/.local/share/chezmoi`。如果編輯在 workspace、
+chezmoi 預設會把 source dir 放在 `~/.local/share/chezmoi`。如果編輯在一處、
 執行在 `.local/share`，就會變成同一個 repo 有兩份 clone —— `chezmoi add` / `re-add`
 會寫進「執行」那一份，你在「編輯」那一份卻看不到，兩邊開始漂移。這是最容易出錯的地方。
 
-所以 `.chezmoi.toml.tmpl` 用 `sourceDir` 把它指回 `~/workspace/dotfiles`。
+所以 `.chezmoi.toml.tmpl` 用 `sourceDir` 把它指回 `~/personal/dotfiles`。
 `chezmoi edit` / `add` / `re-add` / `apply` 全部作用在同一份。
 
 ```bash
-chezmoi source-path      # 應該印出 ~/workspace/dotfiles
+chezmoi source-path      # 應該印出 ~/personal/dotfiles
 ```
 
 如果你機器上還留著舊的 `~/.local/share/chezmoi`，確認 `source-path` 指對之後

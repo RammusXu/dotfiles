@@ -6,11 +6,11 @@
 # chezmoi 預設會用 ~/.local/share/chezmoi，這行把它改掉。
 #
 # ⚠️ 因此 bootstrap 那一行【一定】要帶 --source：
-#      chezmoi init --apply --source=~/workspace/dotfiles rammusxu
+#      chezmoi init --apply --source=~/personal/dotfiles rammusxu
 #    忘了帶的話 chezmoi 會 clone 到 ~/.local/share/chezmoi，但這個 config
-#    又指向 ~/workspace/dotfiles（空的）—— 症狀是 `chezmoi managed` 什麼都沒有，
+#    又指向 ~/personal/dotfiles（空的）—— 症狀是 `chezmoi managed` 什麼都沒有，
 #    而且【不會報錯】。實測確認過這個行為。
-sourceDir = {{ (joinPath .chezmoi.homeDir "workspace/dotfiles") | quote }}
+sourceDir = {{ (joinPath .chezmoi.homeDir "personal/dotfiles") | quote }}
 
 [data]
     role = {{ $role | quote }}

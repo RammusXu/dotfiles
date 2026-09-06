@@ -10,19 +10,15 @@
     email = comte_ken@hotmail.com
 {{- end }}
 
-# 身分由目錄決定。git 的 includeIf 是「後者覆蓋前者」，所以順序有意義：
-# 先用 ~/workspace/ 一律套公司身分，再把裡面少數的個人 repo 挑回來。
+# 身分由目錄決定，一條規則對一個目錄，沒有例外：
+#   ~/workspace/ → 公司      ~/personal/ → 個人
+# dotfiles 本身就住在 ~/personal/dotfiles，所以不需要任何 includeIf 例外。
+#
+# git 的 includeIf 是「後者覆蓋前者」。真的有個人專案不得不放在 ~/workspace/
+# 底下時，在 work 那一行【後面】補一行指向 .gitconfig-personal 即可。
 [includeIf "gitdir:{{ .chezmoi.homeDir }}/workspace/"]
     path = {{ .chezmoi.homeDir }}/.gitconfig-work
 [includeIf "gitdir:{{ .chezmoi.homeDir }}/personal/"]
-    path = {{ .chezmoi.homeDir }}/.gitconfig-personal
-
-# --- 例外：住在 ~/workspace/ 底下但屬於個人的 repo ---
-# dotfiles 是 public 的個人 repo，不能用公司 email commit。
-[includeIf "gitdir:{{ .chezmoi.homeDir }}/workspace/dotfiles/"]
-    path = {{ .chezmoi.homeDir }}/.gitconfig-personal
-# chezmoi 的執行目錄（不是編輯位置，但偶爾會在那裡 commit）
-[includeIf "gitdir:{{ .chezmoi.homeDir }}/.local/share/chezmoi/"]
     path = {{ .chezmoi.homeDir }}/.gitconfig-personal
 
 [credential]
