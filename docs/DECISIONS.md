@@ -1,6 +1,10 @@
-# 技術決策與 FAQ
+# 技術決策
 
-這份文件記錄「為什麼是這樣做」。設定檔本身只說明 what，why 放在這裡。
+這份文件只回答一件事：**為什麼是這樣做**。設定檔本身說明 what，why 在這裡。
+
+想知道「怎麼做」（更新套件、換機、apply 流程、出事怎麼查）看
+[`RUNBOOK.md`](RUNBOOK.md)。想知道「裝了什麼、為什麼不裝別的」看
+[`INVENTORY.md`](INVENTORY.md)。
 
 ## 三條設計原則
 
@@ -13,8 +17,6 @@
 3. **身分由目錄決定，不靠記憶。** 公司 / 個人身分靠人手動切，遲早會有一次用錯 email。
 
 ---
-
-# Part 1 — 技術選擇
 
 ## 為什麼是 chezmoi
 
@@ -70,6 +72,62 @@ apply 之後會在 `~/.omz-custom/themes/powerlevel10k/` 底下長出一個假�
 
 改用 `.chezmoiexternal.toml` 由 chezmoi 直接抓上游，`refreshPeriod = "168h"`。
 diff 乾淨了，`git log` 也不再被上游的 commit 淹沒。
+
+## zsh 的設定檔只留三個
+
+zsh 自己就有明確的分工，照它的規則走就不需要自訂的載入層：
+
+| 檔案 | 什麼時候讀 | 放什麼 |
+|---|---|---|
+| `~/.zshenv` | **每個** shell，最早（連 `zsh -c` 都會） | secret / token，不進版控 |
+| `~/.zprofile` | 登入 shell | PATH、環境變數 |
+| `~/.zshrc` | 互動式 shell | oh-my-zsh、plugin、alias、函式、補完、prompt |
+
+2026-09 之前是這樣的：`~/.zshrc` → source `~/.common_env` → source `~/.env` +
+`~/.bash_alias`，而 `~/.bashrc` 存在的唯一理由就是也去 source `~/.common_env`
+（為了讓 bash 也吃得到）。
+
+砍掉那兩層的理由：
+
+1. **實際上只用 zsh。** 為了假想的 bash 使用者多維護一層抽象，代價是每次要改東西
+   都得先想「這該放哪個檔」。macOS 內建的 bash 還是 3.2（2007 年），不會拿來當日常 shell。
+2. **`~/.env` 不是慣例。** zsh 本來就會自動讀 `~/.zshenv`，而且比 `.zshrc` 更早、
+   非互動式也讀得到。自訂一個 `~/.env` 再手動 source，等於重新實作一個已經存在的機制，
+   還多一個「忘記 source 就靜靜失效」的失敗模式。
+3. **PATH 放 `.zprofile` 才是 macOS 的慣例。** Homebrew 官方安裝說明就是叫你把
+   `brew shellenv` 寫進 `~/.zprofile`。
+
+舊檔（`.common_env` / `.bash_alias` / `.bashrc`）由 `.chezmoiremove` 在 apply 時
+自動從 `$HOME` 清掉，不需要每台機器手動處理。**`~/.env` 刻意沒有列進去** ——
+那是 secret，讓 script 自動刪一個可能還沒備份的檔案太危險。
+
+### 但留了一個出口：`~/.zprofile.local`
+
+上面三個檔案都進版控，所以裡面的東西每台機器都會拿到。但有一類設定不符合這個
+前提：**只有這台機器需要、卻又不是 secret**。例如公司網路的 TLS 中間人 CA 憑證
+路徑、某個客戶的 VPN 設定、暫時性的實驗。
+
+`~/.zprofile` 的最後一行因此是：
+
+```bash
+[ -f "$HOME/.zprofile.local" ] && source "$HOME/.zprofile.local"
+```
+
+**為什麼不直接寫進 `~/.zshenv`。** 那是最方便的做法，也是錯的 —— `~/.zshenv` 是
+Bitwarden 的還原目標，而兩個方向不對稱：
+
+- `secrets-restore.sh` 是 `bw get notes > ~/.zshenv`，**整檔覆蓋**
+- `secrets-backup.sh` 是**手動**貼進 Bitwarden GUI（刻意的，見 Secret 策略那節）
+
+所以加在 `~/.zshenv` 的非 secret 設定不會自動進 Bitwarden，下次換機或還原時就
+**無聲消失**，沒有任何錯誤訊息。`~/.zshenv` 該只放 secret，一種東西一個家。
+
+**為什麼「有這個出口」這件事要進版控。** 出口裡的內容不進版控，但那一行 source
+進。這樣換機時看 `~/.zprofile` 就知道還有一個本機檔案要補，而不是三個月後對著一個
+沒生效的設定發呆。這是「靜靜失效」那個失敗模式的同一個解法。
+
+**代價：它沒有備份。** 不在 git、不在 Bitwarden。所以它只適合放「掉了重寫一行就好」
+的東西；重建不出來的設定該進版控或進 Bitwarden，不該待在這裡。
 
 ## 為什麼 role 用 prompt，不用 hostname
 
@@ -140,7 +198,10 @@ chezmoi 預設把 source dir 放在 `~/.local/share/chezmoi`。那個位置有�
 
 實作：
 
-- `~/.env` 永遠不被 chezmoi 管，`.zshrc` 只是 `[ -f ~/.env ] && source` 它
+- `~/.zshenv` 永遠不被 chezmoi 管。用 `~/.zshenv` 而不是自訂的 `~/.env`：這是 zsh 的
+  慣例位置 —— zsh 每個 shell 啟動時、比 `.zshrc` 更早自動讀它，連 `zsh -c` 這種
+  非互動式呼叫都吃得到，所以 `.zshrc` 完全不用碰。bash 沒有這個機制，由
+  `~/.common_env` 用 `[ -z "$ZSH_VERSION" ]` 判斷後補讀一次
 - 值存在 **Bitwarden 的 Secure Note**（本來就在用的工具，不多養一個）
 - 新機第二步：`export BW_SESSION=$(bw unlock --raw) && ./scripts/secrets-restore.sh`
 - **bootstrap 不會因為缺 secret 而失敗** —— `run_once_after_40-bootstrap-checklist.sh`
@@ -149,7 +210,9 @@ chezmoi 預設把 source dir 放在 `~/.local/share/chezmoi`。那個位置有�
 再加一層結構性保證：`.githooks/pre-commit` 用 gitleaks + 檔名/pattern 檢查擋提交。
 `run_once_after_05` 會自動把 `core.hooksPath` 指過去，所以每台機器都自動生效。
 
-`age` 還是有裝，留給「真的非得進版控的加密檔」那種例外，但預設沒在用。
+`age` 刻意**沒有**裝。它本來是留給「真的非得加密進版控的例外」，但那個例外
+從來沒發生過 —— 需要的那天再 `brew install age`，不需要為了一個假設的例外
+在每台機器上多帶一個工具（見 [INVENTORY](INVENTORY.md)）。
 
 ## SSH 還是 HTTPS
 
@@ -206,6 +269,11 @@ git remote set-url origin https://github.com/org/repo.git
     path = ~/.gitconfig-personal
 ```
 
+公司的 name / email 不寫死在這個 public repo 裡 —— `dot_gitconfig-work.tmpl` 從
+`~/.config/chezmoi/chezmoi.toml` 讀 init 時問的 `workName` / `workEmail`。要改就重跑
+`chezmoi init`。（沒重新 init 過的舊機器會 fallback 成佔位字串 `you@company.com`，
+bootstrap 檢查清單會抓到，不會安靜地用錯身分。）
+
 `useConfigOnly = true` 是重點：**沒有預設身分**。在沒被 includeIf 覆蓋到的目錄裡 commit
 會直接報錯，而不是安靜地用錯的 email 送出去。
 
@@ -222,9 +290,28 @@ Host github-work
     IdentitiesOnly yes
 ```
 
-remote 寫 `git@github-work:eslitecorp/repo.git`。**用哪把 key 由 remote URL 決定**，
+remote 寫 `git@github-work:your-company-org/repo.git`。**用哪把 key 由 remote URL 決定**，
 不會兩個帳號互相打架。`IdentitiesOnly yes` 不能省，否則 ssh-agent 會把所有 key
 依序試一遍，GitHub 認第一把成功的 —— 那可能不是你要的那把。
+
+**但不能只有 alias。** 2026-09 盤點時發現一件事：26 個 repo 裡有 25 個的 remote 是
+`git@github.com:…` 這種不帶 alias 的 URL，其中 20 個是公司 repo。如果 `~/.ssh/config`
+裡只有 alias，那些 repo 全部會掉到 `Host *`（沒有 `IdentityFile`）—— push 能不能成功
+就看 ssh-agent 裡剛好有哪把 key。所以 config 裡明確保留 `Host github.com` /
+`Host gitlab.com`，**預設走公司身分**（因為多數是公司 repo）。
+
+代價：個人 repo 若用不帶 alias 的 URL 會拿公司 key 去認證。所以個人 repo 一律
+`git remote set-url origin git@github-personal:…`。這是刻意選的預設值 ——
+把「忘記設 alias」的後果放在比較少的那一邊。
+
+**key 的檔名不寫進這個 public repo。** template 用 `sshKeyWork` /
+`sshKeyWorkGitlab` / `sshKeyPersonal` 三個值，預設是慣例名稱
+（`id_ed25519_work` / `id_ed25519_personal`），舊機器 key 名字不一樣的話在
+`~/.config/chezmoi/chezmoi.toml` 覆寫。理由跟 git 身分一樣：檔名可能帶公司名。
+
+**這個 repo 不產生也不碰任何 key。** 整包沒有一處執行 `ssh-keygen`（bootstrap
+檢查清單只是把指令印出來）。會被覆蓋的只有 `~/.ssh/config` 本身 —— 手改過的內容
+要先搬進 template。
 
 **一個要注意的坑**：gh CLI 從 v2.40 起支援同一 host 多帳號，但**沒有做「依 pwd 或 git
 remote 自動切換」**。所以 `git push` 會因為 SSH alias 自動用對 key，但 `gh pr create`
@@ -257,264 +344,3 @@ remote 自動切換」**。所以 `git push` 會因為 SSH alias 自動用對 ke
 | **Xnip** | 原生截圖 + 標示 | **留著**。原生仍沒有**捲動截圖**。Homebrew 沒有它（MAS app），要手動裝 |
 
 ---
-
-# Part 2 — FAQ
-
-### 新 Mac 怎麼開機？
-
-```bash
-xcode-select --install
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply rammusxu
-```
-
-用 `curl` 而不是 `brew install chezmoi`：可能是全新機器或 Linux 機器，為了一致性統一用 curl。
-（Homebrew 那行還是要先跑，因為 `run_onchange_after_10-brew.sh` 需要它。）
-
-`init` 會問 `role`（primary / runner）和 `isWork`。跑完看終端機印出的 bootstrap 檢查清單。
-
-### 新增 brew 套件？
-
-編輯 `Brewfile`（CLI）或 `Brewfile.gui`（cask），下次 `chezmoi apply` 會自動重跑 brew bundle。
-
-靠的是 `run_onchange_after_10-brew.sh.tmpl` 開頭那幾行 `sha256sum` ——
-`run_onchange_` 是比對「script render 後的內容」有沒有變。
-**沒有那幾行 hash，改 Brewfile 永遠不會觸發重跑**（這是舊版真實存在的 bug）。
-
-### 新增檔案到 chezmoi？
-
-```bash
-chezmoi add ~/.foo
-chezmoi add --autotemplate ~/.foo   # 需要跨機器變動時
-```
-
-加之前先想：**這個檔案裡有 secret 嗎？** 有的話不要 add，走 Bitwarden。
-pre-commit hook 會擋，但別依賴它 —— 它是最後一道，不是第一道。
-
-### 怎麼更新 oh-my-zsh / p10k？
-
-```bash
-make refresh    # chezmoi apply --refresh-externals
-```
-
-不要開 oh-my-zsh 自己的自動更新。
-
-### 為什麼 ZSH_CUSTOM 不用預設的 `.oh-my-zsh/custom`？
-
-因為更新 `.oh-my-zsh` 時會被整個覆蓋掉。改指到 `~/.omz-custom`。
-
-### apply 之前要做什麼？
-
-```bash
-chezmoi diff    # 一定要先看
-```
-
-尤其是在舊機上 pull 完之後。
-
-### 兩台機器怎麼同步？
-
-**新機是唯一的 source of truth。**
-
-- 新機：`chezmoi add` / `re-add` → commit → push
-- 舊機：**只** `chezmoi update`，不 re-add、不 push
-
-兩台都往上推，遲早會遇到不想在半夜 debug 的 merge conflict。
-
-### 機器上裝的東西跟 Brewfile 對不上？
-
-```bash
-make audit    # scripts/brewfile-audit.sh
-```
-
-會列出三個差集：機器有但沒宣告的、宣告了但機器沒有的、cask 的差集，
-外加佔空間前 15 名。
-
-### 不小心把 secret commit 了怎麼辦？
-
-1. **先當作已經外洩** —— 立刻去把那個 token / key 撤銷重發。這是最重要的一步。
-2. 才處理 git 歷史（`git filter-repo`）。但 GitHub 會保留 dangling object，
-   force push 不等於刪除。
-3. 順序不能反。花兩小時清歷史卻沒撤銷憑證，等於沒做。
-
-### 為什麼這個 repo 是 public？
-
-因為原則 1：全新的 Mac 沒有任何憑證，只有 public repo 能匿名 HTTPS clone。
-private repo 會變成「要先設定認證才能設定機器」的循環。
-
-代價是所有內容都必須經得起公開 —— 這反而強迫了乾淨的 secret 邊界。
-
----
-
-# Part 3 — 日常維運
-
-## Q. 拿到新電腦，完整要跑什麼？
-
-三段，中間可以停下來做別的事。
-
-**① 系統底座**（約 10 分鐘，大部分在等下載）
-
-```bash
-xcode-select --install
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-Homebrew 一定要先裝，因為 `run_onchange_after_10-brew.sh` 需要它。
-
-**② chezmoi**（一行）
-
-```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply rammusxu
-```
-
-這一行做完的事：clone public repo（**匿名 HTTPS，不需要任何憑證**）→ 問 `role` 與
-`isWork` → 抓 oh-my-zsh / p10k → 寫 dotfiles → 跑 brew bundle → 裝 gcloud →
-設 git hooks → 印出待辦清單。
-
-用 `curl` 而不是 `brew install chezmoi`：新機或 Linux 都是同一行，不用分歧。
-
-**③ 補憑證**（chezmoi 管不到的）
-
-```bash
-export BW_SESSION=$(bw unlock --raw)
-~/.local/share/chezmoi/scripts/secrets-restore.sh   # ~/.env
-
-gh auth login        # 選 HTTPS
-gh auth setup-git
-
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work -C 'rammusxu@eslite.com'
-gh ssh-key add ~/.ssh/id_ed25519_work.pub
-```
-
-第 ② 步結束時終端機會印出這份清單，缺什麼一目瞭然。**它只印不失敗** ——
-bootstrap 不該因為少一個 secret 就整個中斷。
-
-## Q. 改了設定之後怎麼更新？
-
-```bash
-chezmoi edit ~/.zshrc      # 編輯 source 檔（不是直接改 ~/.zshrc）
-chezmoi diff               # 看會改什麼
-chezmoi apply
-cd $(chezmoi source-path) && git add -A && git commit && git push
-```
-
-如果是直接改了 `~/.zshrc` 才想起來要進版控：
-
-```bash
-chezmoi re-add ~/.zshrc    # 把實體檔案的變更吸回 source
-```
-
-**`re-add` 只在主力機做。** 兩台都 re-add + push 就會開始打架。
-
-## Q. 其他電腦怎麼抓最新版？
-
-```bash
-chezmoi update             # = git pull + apply，一個指令
-```
-
-謹慎一點的版本：
-
-```bash
-chezmoi git pull -- --rebase
-chezmoi diff               # 先看
-chezmoi apply
-```
-
-**紀律：主力機是唯一的 source of truth。** 備援機只 `chezmoi update`，不 re-add、不 push。
-
-如果 `.chezmoi.toml.tmpl` 有變動（例如新增了 prompt 問題），chezmoi 會提示
-`config file template has changed`，這時要跑一次 `chezmoi init` 重新產生 config。
-
-## Q. brew 有確保「只在變更時才套用」嗎？
-
-**有，而且實測驗證過。**
-
-機制是 `run_onchange_` 前綴：chezmoi 把 script **render 之後的內容**做 hash 存進
-persistent state，內容沒變就整支跳過。所以 script 開頭那幾行是關鍵：
-
-```bash
-# Brewfile     hash: {{ include "Brewfile"     | sha256sum }}
-# Brewfile.gui hash: {{ include "Brewfile.gui" | sha256sum }}
-```
-
-Brewfile 改一個字元 → hash 變 → script 內容變 → chezmoi 重跑。
-
-實測（chezmoi v2.66.1，四次 apply）：
-
-| 動作 | brew bundle 累計執行次數 |
-|---|---|
-| apply #1（首次） | 1 |
-| apply #2（什麼都沒改） | 1 |
-| apply #3（什麼都沒改） | 1 |
-| 改 Brewfile 後 apply #4 | 2 |
-
-**這是舊版真實存在的 bug**：原本的 `run_onchange_brew-bundle.sh.tmpl` 沒有這幾行 hash，
-render 結果永遠一樣，所以改 Brewfile **從來不會**觸發重跑。新機第一次 apply 沒事
-（本來就會跑一次），之後兩台再也同步不了套件。
-
-同理 `run_once_after_30-install-gcloud.sh` 用 `run_once_`：一台機器一輩子只跑一次。
-
-## Q. 怎麼讓每次 apply 都很快？
-
-apply 的成本幾乎全在 **externals**（oh-my-zsh 那一坨），不在 dotfiles 本身。
-三層優化，由上往下效果遞減：
-
-**① 日常用 `make quick`**
-
-```bash
-make quick     # chezmoi apply --exclude=externals
-```
-
-完全跳過 externals 的比對。改 `.zshrc`、`.gitconfig`、Brewfile 時用這個就夠了 ——
-那些檔案跟 oh-my-zsh 無關。
-
-**② externals 只抓用得到的 plugin**
-
-oh-my-zsh 有 300+ 個 plugin。全抓等於讓 chezmoi 每次 apply 都比對上千個檔案，
-而實際用到的只有 `.chezmoidata.yaml` 裡列的那幾個。
-
-所以 `.chezmoiexternal.toml.tmpl` 用 `include` 過濾，清單從 `.chezmoidata.yaml`
-產生 —— **同一份清單也產生 `.zshrc` 的 `plugins=()`**，不會出現「加了 plugin
-卻忘了讓 chezmoi 抓下來」。要加 plugin 只改 `.chezmoidata.yaml` 一個檔案。
-
-> `include` 的 pattern 有兩個坑（都實測過）：
-> 1. 比對的是**壓縮檔裡的原始路徑**，也就是 `stripComponents` 生效【之前】的名字，
->    所以要帶 `ohmyzsh-master/` 前綴。少了前綴 → 一個檔案都不會出來。
-> 2. **中間目錄要自己列出來**。只寫 `plugins/git/**` 而沒寫 `plugins` 和 `plugins/git`，
->    chezmoi 會在建目錄時失敗。
->
-> `exclude` 也一樣要帶前綴，且必須用 `**`（`themes/*` 這種單層 glob 無效）。
-
-實測(chezmoi v2.66.1,用一份規模接近真實 oh-my-zsh 的壓縮檔):
-
-| | 檔案數 |
-|---|---|
-| 壓縮檔內總數 | 814 |
-| **套用到 `~/.oh-my-zsh` 的數量** | **59** |
-
-只留下 `.chezmoidata.yaml` 列的 9 個 plugin + `lib/` + `tools/`,
-themes、templates、其餘 300 個 plugin 全數不落地。
-chezmoi 每次 apply 要比對的檔案少了約 93%。
-
-**③ `refreshPeriod` 控制多久才重抓一次**
-
-設 `168h`（一週）。期限內用 cache，不會碰網路。想立刻更新就 `make refresh`。
-
-### 什麼時候該懷疑「apply 變慢了」
-
-```bash
-time chezmoi apply --dry-run
-```
-
-如果明顯比 `time make quick` 慢很多，就是 externals 的比對成本 ——
-回去看 `.chezmoidata.yaml` 是不是塞了用不到的 plugin。
-
-## Q. oh-my-zsh 為什麼不能開自動更新？
-
-`~/.oh-my-zsh` 現在由 chezmoi external 管理，**它不是 git repo**，OMZ 自己的
-`omz update` 會失敗。所以 `.zshrc` 裡明確關掉：
-
-```zsh
-zstyle ':omz:update' mode disabled
-```
-
-更新一律走 `make refresh`。
