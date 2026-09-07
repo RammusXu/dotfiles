@@ -1,134 +1,110 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
+# ~/.zshrc —— 互動式 shell：oh-my-zsh、plugin、alias、補完、prompt。
+#
+# PATH 與環境變數在 ~/.zprofile；secret 在 ~/.zshenv（不進版控）。
+# 三者的分工寫在 ~/.zprofile 開頭。
+
+# p10k 的 instant prompt 必須靠最上面。任何會需要 console 輸入的東西
+# （密碼、[y/n] 確認）都要放在這個 block【之前】。
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-# Load common environment variables and PATH settings
-if [ -f "{{ .chezmoi.homeDir }}/.common_env" ]; then
-    source "{{ .chezmoi.homeDir }}/.common_env"
-fi
+# ─────────── oh-my-zsh ───────────
 
-# Path to your oh-my-zsh installation.
 export ZSH="{{ .chezmoi.homeDir }}/.oh-my-zsh"
 
-# Disable auto convert {} to \{\}
-DISABLE_MAGIC_FUNCTIONS=true
-
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time oh-my-zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="powerlevel10k/powerlevel10k"
-
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
-
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
-
-# Uncomment the following line to use hyphen-insensitive completion.
-# Case-sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
-
-# Uncomment the following line to disable bi-weekly auto-update checks.
-# DISABLE_AUTO_UPDATE="true"
-
-# Uncomment the following line to automatically update without prompting.
-# DISABLE_UPDATE_PROMPT="true"
-
-# Uncomment the following line to change how often to auto-update (in days).
-# export UPDATE_ZSH_DAYS=13
-
-# Uncomment the following line if pasting URLs and other text is messed up.
-# DISABLE_MAGIC_FUNCTIONS="true"
-
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
-
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
-
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
-
-# Uncomment the following line to display red dots whilst waiting for completion.
-# Caution: this setting can cause issues with multiline prompts (zsh 5.7.1 and newer seem to work)
-# See https://github.com/ohmyzsh/ohmyzsh/issues/5765
-# COMPLETION_WAITING_DOTS="true"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# You can set one of the optional three formats:
-# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# or set a custom format using the strftime function format specifications,
-# see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $ZSH/custom?
+# 不用預設的 $ZSH/custom —— 更新 .oh-my-zsh 時那個目錄整包會被覆蓋掉。
 ZSH_CUSTOM="{{ .chezmoi.homeDir }}/.omz-custom"
 
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-# plugins 清單從 .chezmoidata.yaml 產生 —— 那裡同時決定 .chezmoiexternal.toml
-# 要從 oh-my-zsh 抓哪些 plugin 目錄下來。要加 plugin 就改那一個檔案。
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# 貼上含 {} 的文字時不要自動轉義成 \{\}
+DISABLE_MAGIC_FUNCTIONS=true
+
+# plugin 清單從 .chezmoidata.yaml 產生 —— 那份清單同時決定
+# .chezmoiexternal.toml 要從上游抓哪些 plugin 目錄下來。要加 plugin 只改那一個檔。
 # zsh-syntax-highlighting 必須是最後一個（.chezmoidata.yaml 裡已排好順序）。
 plugins=({{ range .omzPlugins }}{{ . }} {{ end }}{{ range .customPlugins }}{{ . }} {{ end }})
 
-# Lazy-load nvm: avoids sourcing nvm.sh + scanning for .nvmrc on every shell
-# startup (~1.3s in profiling). nvm/node/npm still work, just load on first use.
-zstyle ':omz:plugins:nvm' lazy yes
-
-# ~/.oh-my-zsh 由 chezmoi external 管理（沒有 .git），OMZ 自己的更新機制會失敗。
-# 更新走 `make refresh`。
+# ~/.oh-my-zsh 由 chezmoi external 管理（不是 git repo），OMZ 自己的 `omz update`
+# 會失敗。更新一律走 `make refresh`。
 zstyle ':omz:update' mode disabled
+
+# brew 的補完要在 oh-my-zsh 跑 compinit 【之前】加進 FPATH。
+# 順序錯了就得在後面再 compinit 一次 —— 那是白花一次啟動成本（舊版就是這樣）。
+# 寫死 /opt/homebrew 而不用 $(brew --prefix)：後者每次開 shell 都要 fork 一個 process。
+if [ -d /opt/homebrew/share/zsh/site-functions ]; then
+  FPATH="/opt/homebrew/share/zsh/site-functions:${FPATH}"
+fi
 
 source $ZSH/oh-my-zsh.sh
 
-# User configuration
+# ─────────── 工具的 shell 整合 ───────────
 
-# Set personal aliases, overriding those provided by oh-my-zsh libs,
-# plugins, and themes. Aliases can be placed here, though oh-my-zsh
-# users are encouraged to define aliases within the ZSH_CUSTOM folder.
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-# Brew Compilation
-if type brew &>/dev/null
-then
-  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+# rbenv：init 會處理 shims、補完和 precmd hook，所以要在 PATH 之後、
+# 而且慣例上放 .zshrc（不是 .zprofile）。guard 起來，新機在 brew bundle 跑完前不噴錯。
+if command -v rbenv >/dev/null 2>&1; then
+  eval "$(rbenv init - --no-rehash zsh)"
 fi
 
-# compinit：一天只重建一次 dump，其餘啟動走 cache（-C 跳過安全檢查）
-autoload -Uz compinit
-if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
-  compinit
-else
-  compinit -C
-fi
+# bun 的補完
+[ -s "{{ .chezmoi.homeDir }}/.bun/_bun" ] && source "{{ .chezmoi.homeDir }}/.bun/_bun"
 
+# VS Code 的 shell integration（只在 VS Code 的終端機裡）
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
-# bun completions（BUN_INSTALL / PATH 已統一在 .common_env 設定）
-[ -s "{{ .chezmoi.homeDir }}/.bun/_bun" ] && source "{{ .chezmoi.homeDir }}/.bun/_bun"
-# CF CLI completions
-[[ -f "{{ .chezmoi.homeDir }}/.config/cf/completions/_cf.zsh" ]] && source "{{ .chezmoi.homeDir }}/.config/cf/completions/_cf.zsh"
+# ─────────── alias 與函式 ───────────
+# 原本散在 ~/.bash_alias（連帶 ~/.common_env / ~/.bashrc）—— 已經合併到這裡，
+# 因為實際上只用 zsh，多一層 source 只是多一個要記的地方。
 
+## kubernetes
+alias k="kubectl"
+
+## ls
+alias ll="ls -lat"
+
+## 搜尋 —— 三個工具各管一件事，不是互相取代：
+##   rg  內容搜尋（預設尊重 .gitignore）
+##   fd  檔名搜尋
+##   fzf 互動式過濾，接在任何輸出後面
+alias ff='fd --type f'                       # 找檔案
+alias fdir='fd --type d'                     # 找目錄
+alias rgh='rg --hidden --no-ignore'          # 連 .gitignore 和隱藏檔一起搜
+# 用 fzf 挑一個檔案然後開 editor（rg 找內容 → fzf 挑 → 開檔）
+fe() {
+  local file
+  file="$(rg --files-with-matches --hidden "${1:-}" 2>/dev/null | fzf --preview 'bat --color=always --style=numbers {}')"
+  [ -n "$file" ] && ${EDITOR:-vi} "$file"
+}
+
+## git
+# 預設分支不是固定的 main —— 公司有些 repo 還是 master，所以問 origin/HEAD，不要寫死。
+git-default-branch() {
+  # 注意不要寫成 `git ... | sed ... || echo main` —— sed 永遠成功，fallback 不會生效。
+  local b
+  b="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)"
+  b="${b#origin/}"
+  [ -n "$b" ] || b=main
+  printf '%s\n' "$b"
+}
+alias git-main='git checkout "$(git-default-branch)" && git pull'
+alias git-clean='git branch --merged | grep -Ev "^\*|$(git-default-branch)" | xargs -r git branch -d'
+alias git-pr='git push -u origin HEAD && gh pr create -f'
+
+## docker
+# $PWD 用單引號 —— 雙引號會在「定義 alias 的那一刻」就展開成家目錄，
+# 結果不管在哪個目錄執行都掛同一個路徑。這是舊版真的踩到的 bug。
+alias docker-debug='docker run -it --rm -v "$PWD":/app -w /app alpine:latest sh'
+
+## python
+alias python="python3"
+alias pip="pip3"
+
+## cloud
+alias aws-whoami="aws sts get-caller-identity"
+alias gcp-auth="gcloud auth login"
+alias gcp-adc="gcloud auth application-default login"
+
+# ─────────── prompt ───────────
+# 要改 prompt 跑 `p10k configure`，或直接編 ~/.p10k.zsh
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

@@ -1,0 +1,57 @@
+# ~/.zprofile —— 登入 shell 讀一次：PATH 與環境變數。
+#
+# zsh 的三個檔案分工，不要混（混了就會出現「明明設了卻沒生效」）：
+#   ~/.zshenv    每個 shell 都讀，而且最早 —— secret / token，【不進版控】，走 Bitwarden
+#   ~/.zprofile  登入 shell —— 就是這個檔案：PATH 與環境變數
+#   ~/.zshrc     互動式 shell —— oh-my-zsh、plugin、alias、補完、prompt
+#
+# 版控的就是這三個。另外有一個出口：~/.zprofile.local —— 只有這台機器需要、
+# 又不是 secret 的設定。由本檔案最後一行 source，見那裡的說明。
+#
+# 為什麼 PATH 放這裡：macOS 的終端機預設都開 login shell，這也是 Homebrew 官方
+# 安裝說明叫你寫 `brew shellenv` 的地方。
+#
+# ⚠️ 這個檔案不要印任何東西 —— 會弄壞 p10k 的 instant prompt。
+
+# --- 基本 PATH ---
+export PATH="$HOME/bin:$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"
+
+# --- postgresql@17 ---
+# keg-only：brew 刻意不把版本化的 postgres link 進 PATH。
+# Brewfile 留它就是為了 psql client，所以這裡自己補，不然 `psql` 叫不到。
+if [ -d "/opt/homebrew/opt/postgresql@17/bin" ]; then
+    export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
+fi
+
+# --- Google Cloud SDK ---
+# 官方 archive 安裝（見 run_once_after_30-install-gcloud.sh）。
+# 刻意不用 homebrew cask：cask 版 depends_on python@3.x，brew 升 python 時 gcloud 會壞。
+if [ -f "{{ .chezmoi.homeDir }}/google-cloud-sdk/path.zsh.inc" ]; then
+    source "{{ .chezmoi.homeDir }}/google-cloud-sdk/path.zsh.inc"
+fi
+
+# --- bun ---
+if [ -d "$HOME/.bun" ]; then
+    export BUN_INSTALL="$HOME/.bun"
+    export PATH="$BUN_INSTALL/bin:$PATH"
+fi
+
+# --- Antigravity（GUI app 附的 CLI）---
+if [ -d "$HOME/.antigravity/antigravity/bin" ]; then
+    export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+fi
+
+# --- 本機專屬設定（不進版控）---
+# 只有這台機器需要、又不是 secret 的東西放這裡：公司網路的 CA 憑證、某個客戶的
+# VPN 設定、暫時性的實驗。
+#
+# 為什麼不放 ~/.zshenv：那個檔案是 Bitwarden 的還原目標。
+#   secrets-restore.sh 是 `bw get notes > ~/.zshenv`（整檔覆蓋），而
+#   secrets-backup.sh 是手動貼進 GUI —— 兩個方向不對稱，所以加在 .zshenv 的
+#   非 secret 設定不會自動進 Bitwarden，下次還原就無聲消失。
+# 為什麼在最後：讓本機設定可以覆蓋上面的預設值。
+#
+# chezmoi 不會碰它 —— 未被管理的檔案只有列進 .chezmoiremove 才會被刪。
+# ⚠️ 這個檔案不在 git、也不在 Bitwarden，沒有任何備份。
+#    只放「掉了重寫一行就好」的東西。
+[ -f "$HOME/.zprofile.local" ] && source "$HOME/.zprofile.local"

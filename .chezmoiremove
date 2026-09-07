@@ -1,0 +1,11 @@
+# 這裡列的 target 會在每次 apply 時從 $HOME 移除。
+#
+# 2026-09：alias / PATH / 環境變數原本繞了 ~/.common_env 和 ~/.bash_alias 兩層，
+# 而且 ~/.bashrc 存在的唯一理由就是去 source ~/.common_env。實際上只用 zsh，
+# 所以全部合併進 ~/.zprofile（PATH/env）和 ~/.zshrc（alias/補完）。
+#
+# 沒有列 .env：那裡面是 secret。遷移是 `mv ~/.env ~/.zshenv`（見 README），
+# 讓 script 自動刪掉一個可能還沒備份的 secret 檔太危險。
+.common_env
+.bash_alias
+.bashrc
