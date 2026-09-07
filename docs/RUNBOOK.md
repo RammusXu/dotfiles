@@ -12,7 +12,8 @@
 - [4. 這些機制怎麼運作](#4-這些機制怎麼運作)
 - [5. 常見問題](#5-常見問題)
 - [6. 在本機預演（換機前）](#6-在本機預演換機前)
-- [7. 出事了怎麼查](#7-出事了怎麼查)
+- [7. apply 中途失敗了怎麼重跑](#7-apply-中途失敗了怎麼重跑)
+- [8. 出事了怎麼查](#8-出事了怎麼查)
 
 ---
 
@@ -321,7 +322,67 @@ chezmoi diff        # 應該一樣乾淨
 
 ---
 
-## 7. 出事了怎麼查
+## 7. apply 中途失敗了怎麼重跑
+
+**先講結論：不用重新 clone、也不用重跑 `chezmoi init`。** 直接再 `make apply`。
+
+以下都是實測（chezmoi 2.72，用一個獨立的 persistent-state 做的實驗）：
+
+| 問題 | 實測結果 |
+|---|---|
+| 失敗的 script 會不會被記成「跑過了」？ | **不會。** 下次 apply 會自己重跑那一支 —— 不需要動 state |
+| 成功的 script 會不會重跑？ | 不會，已經記錄了 |
+| 失敗之後，排在後面的 script 還會跑嗎？ | **不會，預設在第一個錯誤處停住。** 帶 `-k` / `--keep-going` 才會繼續 |
+| 檔案有沒有被 rollback？ | 沒有。已經寫進去的就是寫進去了，chezmoi 不做交易性回復 |
+| `chezmoi apply` 的 exit code | script 失敗時是 `1` |
+
+所以標準的復原流程：
+
+```bash
+make apply              # 失敗的 script 會自己重跑
+chezmoi apply -k        # 想「先把能做的都做完，最後再看有哪些失敗」用這個
+make pull               # 要連 repo 一起更新（= git pull + apply）
+```
+
+### 需要重新拉 repo 的時候
+
+```bash
+cd ~/personal/dotfiles
+git status              # 先看 source dir 本身有沒有問題
+make pull               # = chezmoi update = git pull + apply
+```
+
+`chezmoi init` 重跑也是安全的：它會重新產生 config 並 pull，而 prompt 都是
+`*Once` 系列，答案已經在 `~/.config/chezmoi/chezmoi.toml` 裡就不會再問你
+（除非 `.chezmoi.toml.tmpl` 本身改了，那時 chezmoi 會主動提示
+`config file template has changed`）。
+
+### 強制重跑一支已經成功的 script
+
+```bash
+chezmoi state get-bucket --bucket=scriptState      # 先看記了什麼
+chezmoi state delete-bucket --bucket=scriptState   # 清掉 → 所有 run_once 重跑
+```
+
+注意兩件事：
+
+- `run_once_` 的紀錄在 **scriptState**；`run_onchange_` 的紀錄在 **entryState**。
+  清 `scriptState` 不會讓 `run_onchange_` 重跑 —— 那個是靠「render 後的內容 hash」
+  判斷的，要它重跑就去改內容（`run_onchange_after_10-brew.sh.tmpl` 開頭的 Brewfile
+  hash 行就是這個機制）。
+- `chezmoi state reset` 會清掉全部，包含 entryState。代價是 chezmoi 從此不知道
+  哪些檔案是它寫的，之後遇到本機改過的檔案會開始問你要不要覆蓋。
+
+### externals（oh-my-zsh / p10k / plugin）下載壞了
+
+```bash
+make refresh                    # 強制重抓
+rm -rf ~/.cache/chezmoi         # 連快取一起清掉再抓
+```
+
+---
+
+## 8. 出事了怎麼查
 
 ```bash
 make doctor    # 先跑這個：檢查 source-path / chezmoi.toml / ~/.zshenv 有沒有接對
