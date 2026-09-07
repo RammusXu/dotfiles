@@ -1,10 +1,13 @@
 #!/bin/bash
 # 在舊機上跑，把目前的系統偏好 dump 成參考檔。
 #
-# 重點：dump 出來的東西是「參考文件」，不是拿去直接 apply 的來源。
+# 重點：dump 出來的東西是「對照表」，不是拿去直接 apply 的來源。
 # macOS 的 defaults domain 沒有正式文件、跨版本會變，整包 restore 是災難來源。
-# 正確用法：翻這份 dump，挑出你真的在乎的 key，手動加進
-# run_onchange_after_20-macos-defaults.sh.tmpl 並附上註解。
+#
+# 這個 repo 刻意不用 script 管系統偏好（理由見 docs/DECISIONS.md
+# 「macOS 系統設定：不進版控」）。所以正確用法是：換機前在舊機跑這支，
+# 翻 dump 出來的檔案，照著在新機的「系統設定」裡手動點一遍。
+# 待辦清單在 README 的「換機待辦」。
 set -euo pipefail
 OUT="${1:-$HOME/macos-defaults-baseline}"
 mkdir -p "$OUT"

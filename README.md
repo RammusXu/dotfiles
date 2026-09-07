@@ -173,7 +173,6 @@ flowchart LR
 │                                   ── apply 時跑的 script，數字＝順序 ──
 ├── run_once_after_05-setup-repo-hooks.sh.tmpl      把 core.hooksPath 指到 .githooks
 ├── run_onchange_after_10-brew.sh.tmpl              brew bundle，含 Brewfile hash 觸發行
-├── run_onchange_after_20-macos-defaults.sh.tmpl    macOS 系統偏好
 ├── run_once_after_30-install-gcloud.sh.tmpl        gcloud 官方 archive 安裝
 ├── run_once_after_40-bootstrap-checklist.sh.tmpl   印待辦清單，只印不失敗
 │
@@ -185,7 +184,7 @@ flowchart LR
 │   ├── brew-prune.sh               清掉沒宣告的套件（預設 dry-run）
 │   ├── secrets-backup.sh           ~/.zshenv → Bitwarden
 │   ├── secrets-restore.sh          Bitwarden → ~/.zshenv
-│   └── macos-defaults-dump.sh      舊機 dump 系統偏好當參考
+│   └── macos-defaults-dump.sh      舊機 dump 系統偏好當對照表（系統設定不進版控）
 ├── .githooks/pre-commit            四層檢查，擋 secret 與上游依賴進 public repo
 └── docs/
     ├── RUNBOOK.md                  怎麼做
@@ -275,7 +274,14 @@ ssh -T git@github-personal    # 驗證：應該回 Hi <你的個人帳號>
 - [ ] 2FA / Authenticator 轉移
 - [ ] VS Code：開 Settings Sync，或 `code --list-extensions` 手動補
 - [ ] Obsidian vault 與 `.obsidian/` plugin 設定
-- [ ] Dock 排列、輸入法 —— 手動排，不用 script
+- [ ] **macOS 系統設定 —— 全部手動**（刻意不進版控，理由見 `docs/DECISIONS.md`）
+      換機前先在舊機跑 `scripts/macos-defaults-dump.sh` dump 出來當對照表，然後：
+  - [ ] 鍵盤：重複速度拉到最快、關掉「長按叫出重音字元選單」
+  - [ ] 鍵盤：關掉自動大寫 / 智慧引號 / 智慧破折號
+  - [ ] 觸控板：三指拖移（輔助使用 > 指標控制 > 觸控式軌跡板選項）
+  - [ ] Finder：顯示副檔名、路徑列、狀態列、預設清單檢視、搜尋範圍設目前資料夾
+  - [ ] 截圖：儲存位置、格式 PNG、關掉視窗陰影
+  - [ ] Dock 排列、輸入法、通知
 
 ## 兩台機器的同步紀律
 

@@ -319,21 +319,55 @@ remote 自動切換」**。所以 `git push` 會因為 SSH alias 自動用對 ke
 
 實務上的解法：在 shell prompt 顯示 active user，或在公司目錄用 direnv 設 `GH_TOKEN`。
 
-## macOS 系統設定：分三層
+## macOS 系統設定：不進版控
 
-`defaults` 的 domain 沒有正式文件、跨版本會變。**整包 dump 再 restore 是災難來源**。
+**這個 repo 不管 macOS 系統偏好。** 系統設定改到哪就是哪，不記錄、不還原、不強制。
 
-| 層級 | 做法 | 例子 |
-|---|---|---|
-| **script 管** | 穩定、你真的在乎的少數 key | 鍵盤重複速度、Finder 顯示副檔名/路徑列、截圖位置、三指拖移、關掉智慧引號 |
-| **手動設一次** | 巢狀 plist 或格式易變 | Dock 排列（`persistent-apps`）、輸入法、通知 |
-| **完全不要碰** | 需要 TCC 授權，存在 SIP 保護的資料庫 | 輔助使用、螢幕錄製、完整磁碟取用。defaults 寫不進去 |
+2026-09 之前有一個 `run_onchange_after_20-macos-defaults.sh.tmpl`，用 `defaults write`
+管 16 個 key（鍵盤重複速度、Finder 顯示副檔名/路徑列、截圖位置、三指拖移、關掉智慧引號）。
+整段移除了。
 
-還有一層是 **iCloud 已經同步的**：Safari、密碼、桌布。登入 Apple ID 就有。
+### 為什麼移除
 
-對抗版本變動的三個機制：每個 key 附 `verified_on` 註解、全部 `|| true`（key 在新版消失
-是正常的）、用 `scripts/macos-defaults-dump.sh` 在舊機 dump baseline 當**參考文件**
-而不是 apply 來源。
+原本設計了三個機制來對抗「`defaults` 的 domain 沒有正式文件、跨版本會變」這個問題。
+review 的時候一個一個查，三個裡有兩個是假的：
+
+**1. `verified_on` 註解 —— 填的是沒發生過的事。**
+檔頭寫 `verified_on: macOS 26 (Tahoe)`，但實際上：機器是 macOS 15.3、`chezmoi state dump`
+的 `scriptState` 裡**沒有這個 script 的紀錄**（從來沒執行過）、16 個 key 有 11 個是
+`<未設定>`，而 `NSAutomaticCapitalizationEnabled` 還是 `1`（跟意圖正好相反）。
+一個沒被執行過的 script 帶著「已驗證」的註解，比沒有註解更危險。
+
+**2. 全部 `|| true` —— 防的是不存在的失敗模式。**
+`defaults write` 對「macOS 已經移除的 key」**不會失敗**。實測寫一個完全虛構的
+domain + 虛構 key，`rc=0`，而且值真的寫進去了 —— `defaults` 只是在寫 plist，
+它不驗證 key 有沒有意義。唯一會回非 0 的是 domain 不可寫。
+
+所以 key 在新版消失時，得到的不是「apply 失敗」而是**無聲的無效寫入**，`|| true`
+讓它更無聲。打錯字更慘：`defaults write NSGlobalDomain KeyRepeat -badtype` 回 `rc=0`，
+並且把 integer 2 寫成字串 `"-badtype"`。`|| true` 在這裡沒有任何保護作用。
+
+**3. `scripts/macos-defaults-dump.sh` 當參考文件 —— 這個是真的有用，留著。**
+
+### 為什麼不是「修好它」而是「移除」
+
+要讓 script 真的可靠，得為每個 key 加「寫入後讀回驗證」。但即使加了也只能證明
+**值寫對了**，不能證明**設定生效了** —— 三指拖移這類 key 要登出重入才作用，
+讀回驗證會通過而手勢還是沒反應。也就是說投入維護成本之後，得到的仍然不是保證。
+
+而對面的成本很低：這 16 個設定在「系統設定」裡點一遍大約 5 分鐘，**一台機器一輩子只做一次**。
+拿 5 分鐘換一個需要每次 macOS 大版本更新都重驗、而且驗不完全的 script，不划算。
+
+這跟 Dock 排列當初被排除的理由是同一個，只是把那條線往外移了：**換新機本來就該重新想一次
+這些設定要什麼**，把它凍結在版控裡反而是在保存兩年前的偏好。
+
+### 那現在怎麼辦
+
+- 新機的手動待辦列在 `README.md` 的「換機待辦」和 `run_once_after_40-bootstrap-checklist.sh`
+- 換機前在舊機跑 `scripts/macos-defaults-dump.sh`，dump 出來當**對照表**，照著在新機點一遍
+- **需要 TCC 授權的東西本來就只能手動**：輔助使用、螢幕錄製、完整磁碟取用存在 SIP
+  保護的資料庫裡，`defaults` 寫不進去，硬寫只會壞掉
+- **iCloud 已經同步的不用管**：Safari、密碼、桌布，登入 Apple ID 就有
 
 ## 已被 macOS 26 取代的第三方 app
 
