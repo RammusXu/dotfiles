@@ -9,6 +9,10 @@ docs
 .ruby-lsp
 *.tar.gz
 
+# ~/.zshenv 是 secrets，永遠由 Bitwarden 還原，不該被 chezmoi 碰
+# （這行也擋掉手滑 `chezmoi add ~/.zshenv`）
+.zshenv
+
 # Brewfile 由 run_onchange_after_10-brew.sh 讀取，不是要放進 $HOME 的檔案
 Brewfile
 Brewfile.gui

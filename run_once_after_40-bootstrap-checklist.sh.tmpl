@@ -6,9 +6,12 @@ H="{{ .chezmoi.homeDir }}"
 echo
 echo "──────────── bootstrap 檢查 ────────────"
 
+[ -f "$H/.zshenv" ] \
+  && echo "  ✅ ~/.zshenv（secrets）" \
+  || echo "  ⬜ ~/.zshenv  →  export BW_SESSION=\$(bw unlock --raw) && {{ .chezmoi.sourceDir }}/scripts/secrets-restore.sh"
+
 [ -f "$H/.env" ] \
-  && echo "  ✅ ~/.env" \
-  || echo "  ⬜ ~/.env  →  export BW_SESSION=\$(bw unlock --raw) && {{ .chezmoi.sourceDir }}/scripts/secrets-restore.sh"
+  && echo "  ⚠️  ~/.env 是舊位置 →  mv ~/.env ~/.zshenv && {{ .chezmoi.sourceDir }}/scripts/secrets-backup.sh"
 
 ls "$H"/.ssh/id_* >/dev/null 2>&1 \
   && echo "  ✅ SSH key" \

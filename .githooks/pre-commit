@@ -14,7 +14,7 @@ FAIL=0
 # --- 1. 絕對不該進版控的檔名 ---
 while IFS= read -r f; do
   case "$f" in
-    *.env|.env|*id_rsa|*id_ed25519|*.pem|*.p12|*.pfx|*key.txt|*.kdbx|*credentials.json|*service-account*.json)
+    *.env|.env|.zshenv|*.zshenv|*dot_env|*dot_zshenv|*id_rsa|*id_ed25519|*.pem|*.p12|*.pfx|*key.txt|*.kdbx|*credentials.json|*service-account*.json)
       echo "❌ 檔名看起來是密鑰或憑證: $f"
       FAIL=1 ;;
   esac
