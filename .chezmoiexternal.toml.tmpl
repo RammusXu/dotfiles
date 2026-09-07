@@ -29,9 +29,17 @@
 [".omz-custom/themes/powerlevel10k"]
     type = "archive"
     url = "https://github.com/romkatv/powerlevel10k/archive/master.tar.gz"
-    exact = true
     stripComponents = 1
     refreshPeriod = "168h"
+    # p10k 會在自己的目錄裡【編譯】.zwc 出來（gitstatus 那些）。
+    #
+    # 這裡刻意【沒有】exact = true，而且排除 .zwc —— 兩件事要一起做：
+    #   只排除 .zwc 但留著 exact：chezmoi 會把「不是我管的」檔案刪掉，於是每次
+    #     apply 刪掉 p10k 編譯的檔、p10k 再編回來，chezmoi diff 永遠是髒的。
+    #   只留 exact 不排除：p10k 重新編譯過的檔案會讓 chezmoi 停下來問
+    #     「這個檔在我上次寫入之後被改過」，而 script 環境沒有 TTY 可以回答。
+    # 代價：上游刪掉的檔案會留在本機。要真的乾淨就 rm -rf 那個目錄再 make refresh。
+    exclude = ["**/*.zwc"]
 
 [".omz-custom/plugins/zsh-autosuggestions"]
     type = "archive"
