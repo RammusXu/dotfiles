@@ -4,6 +4,7 @@
 set -uo pipefail
 H="{{ .chezmoi.homeDir }}"
 WORK_EMAIL="{{ if hasKey . "workEmail" }}{{ .workEmail }}{{ else }}you@company.com{{ end }}"
+WORK_KEY="{{ if hasKey . "sshKeyWork" }}{{ .sshKeyWork }}{{ else }}id_ed25519_work{{ end }}"
 echo
 echo "──────────── bootstrap 檢查 ────────────"
 
@@ -21,9 +22,10 @@ case "$WORK_EMAIL" in
     echo "  ✅ 公司 git 身分（~/workspace/ 底下的 repo 會用它）" ;;
 esac
 
-ls "$H"/.ssh/id_* >/dev/null 2>&1 \
-  && echo "  ✅ SSH key" \
-  || echo "  ⬜ SSH key →  ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work -C '$WORK_EMAIL'"
+# 只檢查、不產生 —— 這個 repo 從來不會自己動 key。
+[ -f "$H/.ssh/${WORK_KEY}" ] \
+  && echo "  ✅ 公司 SSH key（~/.ssh/${WORK_KEY}）" \
+  || echo "  ⬜ 公司 SSH key →  ssh-keygen -t ed25519 -f ~/.ssh/${WORK_KEY} -C '$WORK_EMAIL' && gh ssh-key add ~/.ssh/${WORK_KEY}.pub"
 
 gh auth status >/dev/null 2>&1 \
   && echo "  ✅ gh 已登入" \

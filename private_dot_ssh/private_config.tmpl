@@ -1,30 +1,65 @@
+{{- /* key 的檔名可以在 ~/.config/chezmoi/chezmoi.toml 覆寫（那個檔在 $HOME，不進版控）。
+       預設是慣例名稱，新機照 bootstrap 檢查清單產生就會對上；舊機器如果 key 叫別的
+       名字，在那裡設 sshKeyWork / sshKeyWorkGitlab / sshKeyPersonal 就好，
+       不需要把檔名（可能帶公司名）寫進這個 public repo。 */ -}}
+{{- $keyWork := "id_ed25519_work" -}}
+{{- if hasKey . "sshKeyWork" }}{{ $keyWork = .sshKeyWork }}{{ end -}}
+{{- $keyWorkGitlab := $keyWork -}}
+{{- if hasKey . "sshKeyWorkGitlab" }}{{ $keyWorkGitlab = .sshKeyWorkGitlab }}{{ end -}}
+{{- $keyPersonal := "id_ed25519_personal" -}}
+{{- if hasKey . "sshKeyPersonal" }}{{ $keyPersonal = .sshKeyPersonal }}{{ end -}}
 # 由 chezmoi 管理。這裡只有 host alias 與 key 路徑，沒有任何私鑰。
 #
-# 用法：remote 寫成 git@github-work:eslitecorp/repo.git
-#      這樣「用哪把 key」由 remote URL 決定，不會兩個帳號互相打架。
+# ⚠️ 這個檔案【不會】產生 key，也不會動到既有的 key。整個 repo 沒有任何
+#    ssh-keygen 的執行（bootstrap 檢查清單只是把指令印出來給你看）。
+#    但它【會覆蓋 ~/.ssh/config 本身】—— 手改過的內容要先搬進這個 template。
 #
-# 但注意：新機 bootstrap 時還沒有任何 key，所以 chezmoi 本身
-#        一律走 HTTPS clone（見 docs/DECISIONS.md）。
+# 新機 bootstrap 時還沒有任何 key，所以 chezmoi 本身一律走 HTTPS clone
+# （見 docs/DECISIONS.md）。
 
 Host *
     AddKeysToAgent yes
     UseKeychain yes
     ServerAliveInterval 60
 
+# ── 不帶 alias 的 URL：預設走公司身分 ──
+#
+# 為什麼要有這兩段：實際盤點 26 個 repo，25 個的 remote 是 git@github.com:… 這種
+# 不帶 alias 的 URL，其中 20 個是公司 repo。如果這裡只放 alias，那些 repo 會掉到
+# `Host *`（沒有 IdentityFile）—— push 就開始看 ssh-agent 的運氣。
+#
+# 代價：個人 repo 若用不帶 alias 的 URL 會拿公司 key 去認證。所以個人 repo
+# 一律用下面的 github-personal alias（`git remote set-url` 改一次就好）。
+Host github.com
+    User git
+    IdentityFile {{ .chezmoi.homeDir }}/.ssh/{{ $keyWork }}
+    IdentitiesOnly yes
+
+Host gitlab.com
+    User git
+    IdentityFile {{ .chezmoi.homeDir }}/.ssh/{{ $keyWorkGitlab }}
+    IdentitiesOnly yes
+
+# ── 明確指定身分的 alias ──
+# remote 寫成 git@github-work:your-company-org/repo.git，
+# 「用哪把 key」就由 remote URL 決定，不會兩個帳號互相打架。
+# IdentitiesOnly yes 不能省，否則 ssh-agent 會把所有 key 依序試一遍，
+# GitHub 認第一把成功的 —— 那可能不是你要的那把。
+
 Host github-work
     HostName github.com
     User git
-    IdentityFile {{ .chezmoi.homeDir }}/.ssh/id_ed25519_work
+    IdentityFile {{ .chezmoi.homeDir }}/.ssh/{{ $keyWork }}
     IdentitiesOnly yes
 
 Host github-personal
     HostName github.com
     User git
-    IdentityFile {{ .chezmoi.homeDir }}/.ssh/id_ed25519_personal
+    IdentityFile {{ .chezmoi.homeDir }}/.ssh/{{ $keyPersonal }}
     IdentitiesOnly yes
 
 Host gitlab-work
     HostName gitlab.com
     User git
-    IdentityFile {{ .chezmoi.homeDir }}/.ssh/id_ed25519_work
+    IdentityFile {{ .chezmoi.homeDir }}/.ssh/{{ $keyWorkGitlab }}
     IdentitiesOnly yes
