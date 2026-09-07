@@ -20,7 +20,19 @@ while IFS= read -r f; do
   esac
 done <<< "$STAGED"
 
-# --- 2. 內容 pattern（gitleaks 沒裝時的 fallback）---
+# --- 2. 上游依賴不該被 vendor 進來 ---
+# oh-my-zsh / p10k / plugin 的內容一律由 chezmoi 從上游抓（.chezmoiexternal.toml.tmpl），
+# repo 裡只留清單。vendor 進來會讓 repo 肥大、又跟上游脫節。
+while IFS= read -r f; do
+  case "$f" in
+    dot_oh-my-zsh/*|dot_omz-custom/*|private_dot_oh-my-zsh/*|*ohmyzsh-master*|*.tar.gz)
+      echo "❌ 這是上游依賴的內容，不該進版控: $f"
+      echo "   → 清單改 .chezmoidata.yaml；抓法改 .chezmoiexternal.toml.tmpl"
+      FAIL=1 ;;
+  esac
+done <<< "$STAGED"
+
+# --- 3. 內容 pattern（gitleaks 沒裝時的 fallback）---
 PATTERNS='(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk-[A-Za-z0-9]{32,}|AIza[0-9A-Za-z_-]{35})'
 if git diff --cached -U0 | grep -nE "^\+" | grep -qE "$PATTERNS"; then
   echo "❌ diff 裡出現疑似憑證的字串："
@@ -28,7 +40,7 @@ if git diff --cached -U0 | grep -nE "^\+" | grep -qE "$PATTERNS"; then
   FAIL=1
 fi
 
-# --- 3. gitleaks（有裝就用，權威來源）---
+# --- 4. gitleaks（有裝就用，權威來源）---
 if command -v gitleaks >/dev/null 2>&1; then
   gitleaks protect --staged --redact --no-banner || FAIL=1
 else
@@ -38,11 +50,15 @@ fi
 if [ "$FAIL" -ne 0 ]; then
   cat <<'MSG'
 
-commit 已擋下。
+commit 已擋下。上面的訊息會說是哪一類：
 
-  這是 public repo，secret 進去就等於外洩。
-  正確做法：把值放進 Bitwarden，檔案本身留在 $HOME 不進版控
-            （做法見 docs/DECISIONS.md「Secret 策略」）
+  secret（檔名 / pattern / gitleaks）
+    這是 public repo，進去就等於外洩。值放 Bitwarden，檔案留在 $HOME 不進版控。
+    → docs/DECISIONS.md「Secret 策略」、README「Secrets」
+
+  上游依賴的內容（oh-my-zsh / p10k / plugin）
+    這個 repo 只放清單，不放內容。
+    → 清單 .chezmoidata.yaml、抓法 .chezmoiexternal.toml.tmpl、docs/INVENTORY.md
 
   確定是誤判才用： git commit --no-verify
 MSG

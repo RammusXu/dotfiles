@@ -1,3 +1,15 @@
+# 上游的 oh-my-zsh / powerlevel10k / zsh plugin 內容【絕對不進版控】。
+# 這個 repo 只保留「清單」（.chezmoidata.yaml）和「怎麼抓」（.chezmoiexternal.toml.tmpl），
+# 內容一律由 chezmoi 從上游抓。理由見 docs/DECISIONS.md「為什麼 oh-my-zsh 不 vendor 進 repo」。
+#
+# 這幾行是防手滑（`chezmoi add ~/.oh-my-zsh` 之類）。.githooks/pre-commit 還有第二層。
+dot_oh-my-zsh/
+dot_omz-custom/
+private_dot_oh-my-zsh/
 *.tar.gz
+
+# dump 出來的參考檔可能含機敏資訊，不進版控（scripts/macos-defaults-dump.sh）
+macos-defaults-baseline/
+
 .DS_Store
 .ruby-lsp/
