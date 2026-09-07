@@ -11,7 +11,8 @@
 - [3. 新機完整流程](#3-新機完整流程)
 - [4. 這些機制怎麼運作](#4-這些機制怎麼運作)
 - [5. 常見問題](#5-常見問題)
-- [6. 出事了怎麼查](#6-出事了怎麼查)
+- [6. 在本機預演（換機前）](#6-在本機預演換機前)
+- [7. 出事了怎麼查](#7-出事了怎麼查)
 
 ---
 
@@ -282,7 +283,45 @@ zstyle ':omz:update' mode disabled
 
 ---
 
-## 6. 出事了怎麼查
+## 6. 在本機預演（換機前）
+
+這台機器**沒辦法真正預演新機流程** —— `run_once_*` 已經被標記跑過、`$HOME` 也已經
+滿了。能驗的是「設定內容對不對」，不是「bootstrap 流程順不順」。
+
+### 零風險：apply 到一個丟棄式的假 HOME
+
+```bash
+chezmoi apply --destination=/tmp/newmac --exclude=scripts --force
+ls -a /tmp/newmac
+```
+
+這會把新機會拿到的所有檔案寫到別的地方，不碰 `$HOME`。約 6 秒、500 多個檔案。
+
+> ⚠️ **`--exclude=scripts` 不能省。** `--destination` 只改「檔案寫到哪裡」，
+> **不會 sandbox script** —— `run_onchange_after_10-brew.sh` 裡的 `brew bundle`、
+> `run_once_after_30` 的 gcloud 安裝，照樣會打在真正的機器上。
+
+該檢查的：`.oh-my-zsh/plugins/` 只有清單裡那幾個、沒有 `.bash_alias` /
+`.common_env` / `.bashrc`、**沒有 `.zshenv`**（正確：secret 不由 chezmoi 產生）、
+`.gitconfig` 沒有預設身分而 `.gitconfig-work` 有真的身分、`.ssh/config` 六個 Host。
+
+### 收斂性
+
+```bash
+chezmoi diff        # 應該只列出 script，沒有檔案差異
+make apply
+chezmoi diff        # 應該一樣乾淨
+```
+
+### 真的想測 bootstrap 流程
+
+開一個**新的 macOS 使用者帳號**（系統設定 → 使用者與群組），登入後跑 README 的
+那三行。這是唯一能測到 `chezmoi init` 的 clone、三個 prompt、和 `run_once` script
+在乾淨機器上行為的方法，而且完全不動到你的帳號。
+
+---
+
+## 7. 出事了怎麼查
 
 ```bash
 make doctor    # 先跑這個：檢查 source-path / chezmoi.toml / ~/.zshenv 有沒有接對
@@ -299,3 +338,4 @@ make doctor    # 先跑這個：檢查 source-path / chezmoi.toml / ~/.zshenv �
 | commit 被 pre-commit 擋下 | 訊息會說是哪一類（secret 檔名 / 上游依賴 / pattern / gitleaks）。確定誤判才 `--no-verify` |
 | apply 變慢 | [為什麼 apply 這麼快（以及變慢時怎麼查）](#為什麼-apply-這麼快以及變慢時怎麼查) |
 | 缺 secret 的東西一直失敗 | `make secrets`（要先 `export BW_SESSION=$(bw unlock --raw)`） |
+| `brew.sh: exit status 1` | 幾乎都是 GUI cask：`/Applications` 裡已經有一份**手動裝的**同名 app，Homebrew 會嘗試 adopt，而 adopt 會跑 `sudo chmod -R a+rX`，script 環境沒有 TTY 可以輸入密碼。在真的終端機跑一次 `brew install --cask --adopt <name>` 即可。新機器不會遇到（`/Applications` 是空的）。CLI 的 Brewfile 失敗才會真的中斷 apply |

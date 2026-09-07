@@ -16,7 +16,21 @@ brew bundle --file="{{ .chezmoi.sourceDir }}/Brewfile"
 
 {{ if eq $role "primary" }}
 echo "==> 🖥  brew bundle (GUI casks — primary only)"
-brew bundle --file="{{ .chezmoi.sourceDir }}/Brewfile.gui"
+# 刻意【不】讓 GUI cask 的失敗中斷整個 apply —— 跟 bootstrap 檢查清單同一個原則：
+# 少一個 GUI app 不該讓 dotfiles / CLI 工具也套用不完。
+#
+# 最常見的失敗原因：/Applications 裡已經有一份【手動裝的】同名 app。
+# Homebrew 6 會嘗試 adopt 它，而 adopt 會跑 `sudo chmod -R a+rX`，
+# chezmoi 的 script 環境沒有 TTY 可以輸入密碼 → cask 失敗 → brew bundle 回 1。
+# 新機器不會遇到（/Applications 是空的，不需要 adopt）。
+if ! brew bundle --file="{{ .chezmoi.sourceDir }}/Brewfile.gui"; then
+  echo
+  echo "⚠️  有 GUI cask 沒裝成 —— 上面的訊息會說是哪一個。"
+  echo "    如果原因是「已經有一份手動裝的 app」，在【真的終端機】跑一次："
+  echo "        brew install --cask --adopt <name>"
+  echo "    dotfiles 與 CLI 工具不受影響，已經套用完成。"
+  echo
+fi
 {{ else }}
 echo "==> ⏭  role={{ $role }}，略過 GUI casks"
 {{ end }}
