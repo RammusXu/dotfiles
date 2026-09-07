@@ -52,15 +52,16 @@ brew "fd"
 brew "kubernetes-cli"
 brew "kubectx"
 brew "k9s"
-brew "k3d"             # 本機起 cluster 用這個（minikube 已移除）
 
 # --- iac / cloud ---
 brew "opentofu"        # terraform 的替代，只留一個：tofu
 brew "awscli"
 brew "azure-cli"
+brew "saml2aws"        # 用 SAML/SSO 換 AWS 短期憑證
 
 # --- containers ---
 brew "docker-compose"
+brew "podman"
 
 # --- languages / runtimes ---
 brew "go"
@@ -71,6 +72,3 @@ brew "ruby-build"
 
 # --- data ---
 brew "postgresql@17"   # 主要是 psql client（keg-only，PATH 在 ~/.zprofile 補）
-
-# --- ai cli ---
-brew "gemini-cli"

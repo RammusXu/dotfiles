@@ -79,10 +79,9 @@ chezmoi 抓下來」。加 plugin 只改 `.chezmoidata.yaml` 一個檔。
 
 **從未使用（沒有 config 目錄、history 0 筆）**
 
-`helm`、`argocd`、`step`、`grpcurl`、`jwt-cli`、`eksctl`、`podman`、`cue`、`d2`、
+`helm`、`argocd`、`step`、`grpcurl`、`jwt-cli`、`eksctl`、`cue`、`d2`、
 `graphviz`、`httpie`、`age`
 
-- `podman` → 用 docker
 - `httpie` → `curl` + `jq` 夠用
 - `d2` / `graphviz` → 圖改用 mermaid（GitHub 原生會 render，不用裝東西）
 - `age` → 原本留給「真的非得加密進版控的例外」，但那個例外從來沒發生。真需要再裝
@@ -91,8 +90,7 @@ chezmoi 抓下來」。加 plugin 只改 `.chezmoidata.yaml` 一個檔。
 
 | 移除 | 最後痕跡 |
 |---|---|
-| `minikube` | `~/.minikube` 2024-08。本機 cluster 用 `k3d` |
-| `saml2aws` | `~/.saml2aws` 2024-03 |
+| `minikube` | `~/.minikube` 2024-08 |
 | `terraformer` | 從未使用，而且 348 MB |
 | `pandoc` | 從未使用，259 MB |
 
@@ -136,10 +134,11 @@ oh-my-zsh 跑 `compinit` **之前**把那個目錄加進 `FPATH`，所以補完�
 
 **移出 Brewfile.gui 但留在機器上**（進 `Brewfile.unmanaged`）
 
-`claude-code`、`docker-desktop`、`session-manager-plugin`、`telegram`
-—— 都是 app 自己會更新、或安裝時需要人在場的。
+`docker-desktop`、`docker`（Caskroom 裡指向 docker-desktop 的 rename symlink）、
+`session-manager-plugin` —— 安裝時需要人在場，或只是偶爾要用。
 
-`ghostty` 本來也在這裡，2026-09 確認不再使用，已從機器上移除。
+`ghostty`、`telegram`、`claude-code` 本來也在這裡，2026-09 確認後從機器上移除
+（`claude-code` 改用官方 curl installer）。
 
 **shell 設定檔從五個變三個**
 
@@ -170,6 +169,23 @@ oh-my-zsh 跑 `compinit` **之前**把那個目錄加進 `FPATH`，所以補完�
 `cue-lang/tap`、`derailed/k9s`、`hashicorp/tap`、`manaflow-ai/cmux`、
 `mike-engel/jwt-cli`、`weaveworks/tap` 都可以 untap —— 對應的 formula 要嘛移除了，
 要嘛 homebrew-core 已經收錄。`make prune` 會列出來。
+
+### 盤點之後又調整的（人的判斷推翻證據）
+
+自動化的證據只能說「這台機器上沒有痕跡」，不等於「不需要」。以下是看完清單
+之後手動調回來的：
+
+| 調整 | 理由 |
+|---|---|
+| `saml2aws` **加回** | `~/.saml2aws` 是 2024-03，但那是「換 AWS 短期憑證」的工具 —— 平常不會留下 config 變動。移掉會在真的要登入時卡住 |
+| `podman` **加回** | 雖然日常用 docker，仍要留著 |
+| `gemini-cli` **移除** | 原本因為 history 有 12 筆而保留，確認不再用 |
+| `k3d` **移除** | 原本留著當 minikube 的替代，確認本機不需要跑 cluster。所以「本機 cluster」這件事現在兩個工具都沒有了 —— 需要時再裝 |
+| `telegram` cask **移除** | 原本放在 Brewfile.unmanaged（機器上留著不管理），確認不用了 |
+| `claude-code` cask **移除** | 改用官方 curl installer（`~/.local/bin/claude`）。brew cask 那份是 2.1.153，比 curl 版落後，而且兩份併存時 PATH 上跑到哪一份要看順序 |
+
+教訓：`brew leaves` 和 config 目錄的 mtime 只是**線索**，不是判決。
+「偶爾才用、但用的時候不能沒有」的工具（憑證類、災難處理類）不會留下痕跡。
 
 ### 執行時踩到的三件事（都反饋回 script 了）
 

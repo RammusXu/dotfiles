@@ -9,9 +9,7 @@
 #   - 這台機器在用，但不想寫進「新機一定要裝」的清單
 # 想要新機自動裝，就把那一行搬到 Brewfile / Brewfile.gui。
 
-cask "claude-code"              # 自己會更新
 cask "docker-desktop"           # 首次啟動要授權 privileged helper，見 Brewfile.manual
 cask "docker"                   # 不是另一個 app —— Caskroom 裡是指向 docker-desktop 的
                                 # rename symlink（舊名）。列在這裡只為了讓 audit 不要一直報它
 cask "session-manager-plugin"   # AWS SSM，只有偶爾連 EC2 時要
-cask "telegram"                 # 自己會更新
