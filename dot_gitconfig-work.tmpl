@@ -1,3 +1,12 @@
+{{- /* 公司身分不進 public repo：值來自 ~/.config/chezmoi/chezmoi.toml
+       （init 時問的 workName / workEmail）。要改就重跑 `chezmoi init`，
+       或直接編輯那個檔再 `chezmoi apply`。
+       hasKey 的 fallback 是給「還沒重新 init 過」的舊機器用的 —— 會寫出
+       明顯是佔位字串的 email，bootstrap 檢查清單會抓到。 */ -}}
+{{- $workName := "you-work" -}}
+{{- if hasKey . "workName" }}{{ $workName = .workName }}{{ end -}}
+{{- $workEmail := "you@company.com" -}}
+{{- if hasKey . "workEmail" }}{{ $workEmail = .workEmail }}{{ end -}}
 [user]
-    name = rammusxu-eslite
-    email = rammusxu@eslite.com
+    name = {{ $workName }}
+    email = {{ $workEmail }}

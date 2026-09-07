@@ -3,6 +3,7 @@
 # 刻意全部只檢查不失敗 —— bootstrap 不該因為少一個 secret 就整個中斷。
 set -uo pipefail
 H="{{ .chezmoi.homeDir }}"
+WORK_EMAIL="{{ if hasKey . "workEmail" }}{{ .workEmail }}{{ else }}you@company.com{{ end }}"
 echo
 echo "──────────── bootstrap 檢查 ────────────"
 
@@ -13,9 +14,16 @@ echo "──────────── bootstrap 檢查 ──────�
 [ -f "$H/.env" ] \
   && echo "  ⚠️  ~/.env 是舊位置 →  mv ~/.env ~/.zshenv && {{ .chezmoi.sourceDir }}/scripts/secrets-backup.sh"
 
+case "$WORK_EMAIL" in
+  you@company.com|"")
+    echo "  ⬜ 公司 git 身分還是佔位字串 →  chezmoi init  （重答 workName / workEmail）" ;;
+  *)
+    echo "  ✅ 公司 git 身分（~/workspace/ 底下的 repo 會用它）" ;;
+esac
+
 ls "$H"/.ssh/id_* >/dev/null 2>&1 \
   && echo "  ✅ SSH key" \
-  || echo "  ⬜ SSH key →  ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work -C 'rammusxu@eslite.com'"
+  || echo "  ⬜ SSH key →  ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work -C '$WORK_EMAIL'"
 
 gh auth status >/dev/null 2>&1 \
   && echo "  ✅ gh 已登入" \

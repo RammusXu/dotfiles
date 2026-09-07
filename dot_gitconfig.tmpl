@@ -1,16 +1,12 @@
-{{- /* 尚未重新 chezmoi init 的機器 fallback 回舊的 hostname 判斷，避免身分被誤切 */ -}}
-{{- $isWork := contains "rammusxu" .chezmoi.hostname -}}
-{{- if hasKey . "isWork" }}{{ $isWork = .isWork }}{{ end -}}
+{{- /* 身分完全由【目錄】決定，不看「這台是不是公司的電腦」——
+       每台機器都可能同時放公司和個人的 repo。 */ -}}
 [user]
-{{- if $isWork }}
-    name = rammusxu-eslite
-    email = rammusxu@eslite.com
-{{- else }}
-    name = RammusXu
-    email = comte_ken@hotmail.com
-{{- end }}
+    # 沒有預設身分。沒被下面 includeIf 涵蓋到的目錄裡 commit 會直接報錯，
+    # 而不是安靜地用錯 email 送出去。臨時 repo 就在那個 repo 裡自己
+    # `git config user.email ...`，這是刻意的摩擦。
+    useConfigOnly = true
 
-# 身分由目錄決定，一條規則對一個目錄，沒有例外：
+# 一條規則對一個目錄，沒有例外：
 #   ~/workspace/ → 公司      ~/personal/ → 個人
 # dotfiles 本身就住在 ~/personal/dotfiles，所以不需要任何 includeIf 例外。
 #
