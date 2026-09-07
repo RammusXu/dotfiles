@@ -1,0 +1,17 @@
+# 「機器上刻意留著，但不由 Brewfile 管」的東西。
+#
+# 這份【不會】被 brew bundle 讀 —— 所以新機 bootstrap 不會裝這裡的項目。
+# 它唯一的作用是讓 scripts/brew-prune.sh 不要把它們列進 uninstall 清單，
+# 免得「從 Brewfile 拿掉」被誤解成「從機器上刪掉」。
+#
+# 什麼東西該放這裡：
+#   - app 自己有更新機制、或裝的時候需要人在場（授權、MAS）
+#   - 這台機器在用，但不想寫進「新機一定要裝」的清單
+# 想要新機自動裝，就把那一行搬到 Brewfile / Brewfile.gui。
+
+cask "claude-code"              # 自己會更新
+cask "docker-desktop"           # 首次啟動要授權 privileged helper，見 Brewfile.manual
+cask "docker"                   # 不是另一個 app —— Caskroom 裡是指向 docker-desktop 的
+                                # rename symlink（舊名）。列在這裡只為了讓 audit 不要一直報它
+cask "session-manager-plugin"   # AWS SSM，只有偶爾連 EC2 時要
+cask "telegram"                 # 自己會更新

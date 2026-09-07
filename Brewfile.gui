@@ -1,26 +1,17 @@
 # GUI 應用程式 — 只有 role = primary 的機器會裝。
 # 這些 cask 幾乎都是 auto_updates true，讓 app 自己更新，
 # 不要用 `brew upgrade --cask --greedy` 去接管它們。
+#
+# 每一項後面標注來源，兩個層次分開看：
+#   tap        —— cask 定義住在哪個 tap。homebrew/cask 是 Homebrew 官方 tap；
+#                 其他（例：stablyai/orca）是第三方 tap，沒有 Homebrew 的審查。
+#   binary     —— 實際下載的檔案是誰簽的。廠商官方網域/官方 GitHub release = 官方，
+#                 其他鏡像 = community。
+# 目前全部都是「官方 tap + 廠商官方 binary」，換人維護時要重新確認。
+# 查法： brew info --cask <name> 看 From/url，或 brew info --cask --json=v2 <name>
 
 # --- 每天在用 ---
-cask "google-chrome"
-cask "visual-studio-code"
-cask "obsidian"
-cask "linear-linear"          # 注意 token 是 linear-linear，不是 linear
-cask "bitwarden"
-cask "ghostty"
-cask "claude-code"
-
-# --- dev ---
-cask "docker-desktop"         # 首次啟動需要授權，見 Brewfile.manual
-cask "session-manager-plugin"
-
-# --- 通訊 ---
-cask "telegram"
-
-# --- 待確認：見 README「換機待決事項」 ---
-# cask "iterm2"               # 已有 ghostty + cmux，三個終端機留一個就好
-# cask "cmux"
-# cask "mactex"               # 約 5-7GB，確定還在用再裝
-# cask "rar"
-# cask "powershell"
+cask "google-chrome"          # homebrew/cask（官方 tap）｜binary: dl.google.com（Google 官方）
+cask "visual-studio-code"     # homebrew/cask（官方 tap）｜binary: update.code.visualstudio.com（Microsoft 官方）
+cask "obsidian"               # homebrew/cask（官方 tap）｜binary: github.com/obsidianmd 官方 release
+cask "bitwarden"              # homebrew/cask（官方 tap）｜binary: github.com/bitwarden 官方 release

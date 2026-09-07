@@ -4,20 +4,28 @@
 # 子目錄，兩邊都從這份清單產生。不會出現「加了 plugin 卻忘了讓 chezmoi 抓下來」。
 
 # oh-my-zsh 內建 plugin（住在 ~/.oh-my-zsh/plugins/）
+#
+# 註：ripgrep 和 fd 【不要】列在這裡 —— upstream 已經把這兩個 plugin 移除了
+# （現在的 master 有 362 個 plugin，沒有它們）。列了只會在每次開 shell 印
+# 「plugin not found」。它們的補完由 brew 的 site-functions 提供
+# （/opt/homebrew/share/zsh/site-functions/_rg、_fd），.zshrc 會在 oh-my-zsh
+# 跑 compinit 之前把那個目錄加進 FPATH，所以不需要 plugin。
 omzPlugins:
   - git
   - docker
   - zoxide
   - fzf
-  - terraform
   - gcloud
-  - nvm
   - node
   - uv
+  - chezmoi
 
-# 自訂 plugin（住在 ~/.omz-custom/plugins/，由 .chezmoiexternal 或本 repo 提供）
+# 自訂 plugin（住在 ~/.omz-custom/plugins/，由 .chezmoiexternal 抓上游）
+#
+# 註：chezmoi 的 completion 不在這裡 —— oh-my-zsh 本身就內建 plugins/chezmoi，
+#     它會自己 lazy-generate completion 並 cache。所以列在 omzPlugins 就好，
+#     不需要自己寫 script 產生（試過，是多餘的）。
 # 順序有意義：zsh-syntax-highlighting 必須是最後一個。
 customPlugins:
-  - chezmoi
   - zsh-autosuggestions
   - zsh-syntax-highlighting

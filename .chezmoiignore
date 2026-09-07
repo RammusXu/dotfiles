@@ -17,6 +17,7 @@ docs
 Brewfile
 Brewfile.gui
 Brewfile.manual
+Brewfile.unmanaged
 
 {{ if ne $role "primary" }}
 # runner（背景機）不需要 GUI 相關設定
