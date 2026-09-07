@@ -9,7 +9,6 @@
 #   make audit   對齊機器實際狀態 vs 這份清單
 #   make prune   列出「機器上有但這裡沒宣告」的東西，並產生 uninstall 指令
 
-tap "homebrew/bundle"
 tap "derailed/k9s"     # k9s 不在 homebrew-core，只能從這個 tap 裝
 
 # --- shell ---

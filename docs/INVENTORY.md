@@ -166,9 +166,15 @@ oh-my-zsh 跑 `compinit` **之前**把那個目錄加進 `FPATH`，所以補完�
 
 **Tap**
 
+`homebrew/bundle` 也移除了 —— `brew bundle` 從 Homebrew 4.x 起是**內建指令**
+（`$(brew --repo)/Library/Homebrew/cmd/bundle.rb`，`brew commands` 列得出來），
+那個 tap 是舊時代的產物。實測 untap 之後 `brew bundle check` 照樣正常。
+
 `cue-lang/tap`、`derailed/k9s`、`hashicorp/tap`、`manaflow-ai/cmux`、
 `mike-engel/jwt-cli`、`weaveworks/tap` 都可以 untap —— 對應的 formula 要嘛移除了，
 要嘛 homebrew-core 已經收錄。`make prune` 會列出來。
+
+最後只留 `derailed/k9s` 一個 tap（k9s 不在 homebrew-core）。
 
 ### 盤點之後又調整的（人的判斷推翻證據）
 
