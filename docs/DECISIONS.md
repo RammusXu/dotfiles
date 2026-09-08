@@ -260,46 +260,114 @@ chezmoi 預設把 source dir 放在 `~/.local/share/chezmoi`。那個位置有�
 
 ## SSH 還是 HTTPS
 
-**兩個都還在，沒有誰淘汰誰。** 差別在權限顆粒度：
+**日常 git 走 SSH，HTTPS 只留給 bootstrap 的匿名 clone。** 2026-09-08 定案；在那之前
+是反過來的（預設 HTTPS + `gh auth setup-git`）。改掉的兩個理由都來自同一件事：
+一台機器上有兩個 GitHub 帳號。
 
-- **SSH key**：綁整個帳號。一把鑰匙拿到你所有 repo 的權限，**不能設過期**
-- **HTTPS + token**：fine-grained PAT 可以指定只給某幾個 repo、只給讀或讀寫、設到期日
+### 理由一：HTTPS 沒辦法讓身分跟著目錄走
 
-以公司環境來說，HTTPS + token 在治理上明顯比較好交代（可稽核、可撤銷、有期限）。
+`gh` 從 v2.40 起同一個 host 可以登入多個帳號，但它當 credential helper 時
+**只認「目前 active 的那一個」** —— 不看 pwd，也不看 remote URL。走 HTTPS 的話，
+`~/personal/` 底下 push 出去的身分，取決於你上次 `gh auth switch` 切到哪。
 
-### 但 bootstrap 這一步只能是 HTTPS
+SSH 沒有這個問題：remote 寫成 `git@github-personal:…`，`~/.ssh/config` 就把 key 釘死了。
+**身分由 remote URL 決定，不由「我記不記得切帳號」決定** —— 跟 `.gitconfig` 用
+`includeIf` 拿目錄決定 commit 身分是同一套思路。
 
-這是雞生蛋問題：全新的 Mac 還沒有任何 SSH key，而 key 本身不能放進 public repo。
-所以 `chezmoi init --apply rammusxu` 一定要能用 **匿名 HTTPS clone** 完成 ——
+### 理由二：`gh auth setup-git` 會寫進 chezmoi 管的檔案
+
+它把這幾行 append 到 `~/.gitconfig`：
+
+```gitconfig
+[credential "https://github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential
+```
+
+而 `~/.gitconfig` 是 chezmoi 管的，這幾行不在 `dot_gitconfig.tmpl` 裡 ——
+**下次 `make apply` 會整段刪掉，而且不會有任何警告**。症狀是某天 push 突然開始要帳密。
+2026-09-08 用 `chezmoi diff ~/.gitconfig` 實測確認過。
+
+這跟 gcloud `install.sh` 是同一個坑，[通則也一樣](#installsh-的兩個-flag-都要-false)：
+任何第三方 installer 都不准碰 chezmoi 管的檔案。gcloud 的解法是關掉它的 flag、自己在
+template 裡寫一行；`gh` 的解法更乾脆 —— **走 SSH 就根本不需要這個 helper**。
+
+### 代價：SSH key 的權限顆粒度比較差
+
+這點沒有被解決，只是被接受：
+
+- **SSH key**：綁整個帳號、一把拿到所有 repo、**不能設過期**
+- **HTTPS + fine-grained PAT**：可指定 repo、可指定唯讀、可設到期日
+
+單看治理，HTTPS + PAT 明顯好交代（可稽核、可撤銷、有期限）。這裡仍然選 SSH，是因為
+「用錯帳號 push 出去」是每天都可能發生的事，而「key 沒有到期日」要缺乏輪替紀律才會咬人。
+兩害相權先解天天會踩的那個。緩解：key 只留在本機（換機產新的、舊 key 留在舊機各自撤銷），
+repo 層級的權限交給 org 那邊控。
+
+### bootstrap 那一步仍然只能是 HTTPS
+
+雞生蛋問題沒變：全新的 Mac 還沒有任何 SSH key，而 key 不能放進 public repo。所以
+`chezmoi init --apply rammusxu` 一定要能用**匿名 HTTPS clone** 完成 ——
 這也是這個 repo 必須 public 的真正理由。
 
-之後最省事的預設：
+clone 完、key 產出來之後，把 source dir 自己的 remote 換過去：
 
 ```bash
-gh auth login       # 選 HTTPS，走 OAuth，token 存進 keychain
-gh auth setup-git   # 讓 git 用 gh 當 credential helper
+git -C ~/personal/dotfiles remote set-url origin git@github-personal:rammusxu/dotfiles.git
 ```
 
-之後 `git clone/push` 都不用再輸入任何東西。
+`run_once_after_40` 會檢查這件事，沒換過就每次都印待辦。
 
-**SSH 還是留著的兩種情況**：需要 SSH commit signing，或公司網路擋 443 以外的東西時反過來用。
+HTTPS 還留著一個場景：企業防火牆、CI runner、container 常常只放行 443，SSH 的 22 port
+直接被擋，那種環境反過來用 HTTPS + PAT。**但不要把 PAT 貼進 URL**
+（會進 `.git/config` 和 shell history），交給 credential helper。
 
-### HTTPS clone 為什麼存在
+### gh 只給公司帳號用
 
-主要是**網路現實**。很多企業防火牆、CI runner、container 只放行 443，SSH 的 22 port
-直接被擋。public repo 用 HTTPS 還可以完全免認證 clone，CI 抓依賴很方便。
+**個人帳號不掛在 gh 上。** 原本想的是兩個帳號都 `gh auth login`、要用時 `gh auth switch`，
+2026-09-08 真的要動手時放棄了：
 
-```bash
-git remote set-url origin https://github.com/org/repo.git
-```
+- 這台機器的個人帳號**只需要 push / pull**，而那走 SSH，跟 gh 一點關係都沒有。
+  要開 PR、查 issue、打 API 的都是公司 repo。為了用不到的功能，在個人帳號上多掛一個
+  長期有效的 OAuth token，不划算。
+- `gh` 沒有「依 pwd 或 remote 自動切帳號」的能力。多登一個帳號就是多一個失敗模式，
+  而它的症狀（`gh pr create` 開在錯的帳號底下）通常**事後才會發現**。
+- 少一個帳號，`gh ssh-key add` 把公鑰傳到錯帳號的坑也一起消失。
 
-認證交給 credential helper，**不要手動貼 PAT 到 URL 裡**（會進 `.git/config` 和 shell history）。
+| | 公司帳號 | 個人帳號 |
+|---|---|---|
+| 認證 | `gh auth login -h github.com -p ssh -w`（瀏覽器 OAuth） | **不登入 gh** |
+| 上傳公鑰 | `gh ssh-key add ~/.ssh/<work>.pub` | `pbcopy` 貼進 github.com/settings/ssh/new |
+| git push | SSH（`github.com` 預設 alias） | SSH（`github-personal` alias） |
+| PR / issue / API | `gh` | 瀏覽器 |
+
+`gh auth setup-git` 兩邊都不要跑，理由見「理由二」。
+
+登入一律帶 `-w` 走瀏覽器。2026-09-08 試過選 "Paste an authentication token" 貼一把舊 PAT，
+拿到 `HTTP 401: Bad credentials` —— OAuth 沒有自己管 PAT 到期這回事。
 
 ## 一台機器兩個身分
 
-關鍵是**用目錄決定身分**，不要靠記憶手動切。
+**這裡是兩套機制，判斷依據不一樣。混為一談是最常見的誤解**（2026-09-08 自己就搞混過一次，
+以為「反正身分是目錄決定的」，結果漏掉了 remote URL 那一半）：
 
-目錄約定：`~/workspace/`（公司）、`~/personal/`（個人）。
+| | 決定什麼 | 依據什麼 | 設定在哪 |
+|---|---|---|---|
+| `includeIf` | **commit 身分**（作者 name / email） | **目錄** | `.gitconfig` |
+| `~/.ssh/config` | **認證身分**（push 時用哪把 key） | **remote URL 的 host** | `.ssh/config` |
+
+`ssh` 完全不知道你站在哪個目錄，它只拿 URL 裡的 host 字串去查表。所以「人在
+`~/personal/` 底下，但 remote 寫 `git@github.com:…`」的下場是
+**commit 署名個人、認證卻用公司 key** —— 兩半各對一半。當場驗證：
+
+```bash
+cd ~/personal/some-repo
+git config user.email                            # commit 身分：看目錄
+ssh -G git@github.com | grep '^identityfile'     # 認證身分：看 host，跟 cwd 無關
+```
+
+兩套要達成的事是同一件：**不要靠記憶手動切**。目錄約定 `~/workspace/`（公司）、
+`~/personal/`（個人）。
 
 **Git 身分** —— `dot_gitconfig.tmpl`：
 
@@ -353,15 +421,28 @@ remote 寫 `git@github-work:your-company-org/repo.git`。**用哪把 key 由 rem
 （`id_ed25519_work` / `id_ed25519_personal`），舊機器 key 名字不一樣的話在
 `~/.config/chezmoi/chezmoi.toml` 覆寫。理由跟 git 身分一樣：檔名可能帶公司名。
 
-**這個 repo 不產生也不碰任何 key。** 整包沒有一處執行 `ssh-keygen`（bootstrap
-檢查清單只是把指令印出來）。會被覆蓋的只有 `~/.ssh/config` 本身 —— 手改過的內容
-要先搬進 template。
+### key 由 script 產，上傳永遠手動
 
-**一個要注意的坑**：gh CLI 從 v2.40 起支援同一 host 多帳號，但**沒有做「依 pwd 或 git
-remote 自動切換」**。所以 `git push` 會因為 SSH alias 自動用對 key，但 `gh pr create`
-還是用「目前 active 的帳號」，要自己 `gh auth switch`。
+2026-09-08 之前這裡寫的是「這個 repo 不產生也不碰任何 key，只把 `ssh-keygen` 指令印出來」。
+翻案的理由：換機要做三件事 —— 產 key → 上傳公鑰 → 換 remote —— 其中只有第一件是
+**完全機械、沒有任何決策、也沒有外部副作用**的，偏偏它又是後面兩件的前置。
+留給人做，實際效果只是每次換機多一道複製貼上的儀式。
 
-實務上的解法：在 shell prompt 顯示 active user，或在公司目錄用 direnv 設 `GH_TOKEN`。
+`run_once_after_35-ssh-keys.sh.tmpl` 負責產，界線畫得很死：
+
+- **只在檔案不存在時產**（每一把都先 `[ -f ]` 擋過）。既有的 key 一根寒毛都不會動 ——
+  這是原本那條規則裡真正重要的部分，完整保留。
+- **ed25519、`-N ""` 無 passphrase**，比照這台機器既有的慣例（key 只留本機，靠 FileVault 保護）。
+- **私鑰永遠不進版控、不上傳、不備份進 Bitwarden。** 換機產新的，舊 key 留在舊機各自撤銷。
+
+**上傳沒有自動化**，因為那一步會動到 GitHub 帳號（外部副作用、要選帳號、要決定 key 標題），
+而且公司走 gh、個人走 web UI 是兩套流程。`run_once_after_40` 改用 `ssh -T` 檢查
+**「GitHub 那邊認不認得這把 key」**，沒過就印出對應那一套的指令。這比檢查檔案在不在有用 ——
+一次 `ssh -T` 同時驗了 key 存在、公鑰已上傳、`~/.ssh/config` 的 alias 指對了三件事。
+
+會被 apply 整份覆蓋的只有 `~/.ssh/config` 本身 —— 手改過的內容要先搬進 template。
+
+gh CLI 為什麼只登入公司帳號，見上面 [gh 只給公司帳號用](#gh-只給公司帳號用)。
 
 ## macOS 系統設定：不進版控
 

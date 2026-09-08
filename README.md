@@ -180,6 +180,7 @@ flowchart LR
 ├── run_once_after_05-setup-repo-hooks.sh.tmpl      把 core.hooksPath 指到 .githooks
 ├── run_onchange_after_10-brew.sh.tmpl              brew bundle，含 Brewfile hash 觸發行
 ├── run_once_after_30-install-gcloud.sh.tmpl        gcloud 官方 archive 安裝
+├── run_once_after_35-ssh-keys.sh.tmpl              key 不在就產一把，既有的不動
 ├── run_once_after_40-bootstrap-checklist.sh.tmpl   印待辦清單，只印不失敗
 │
 │                                   ── 給人跑的，不會 apply 到 $HOME ──
@@ -241,11 +242,14 @@ bw get notes dotfiles/zshenv | diff - ~/.zshenv    # ③ 只想看跟遠端差�
 
 兩支 script 都吃參數（`secrets-restore.sh <item> <目標檔>`），要分公司/個人兩份 note 時直接用。
 
-## SSH：不產生 key，但會覆蓋 `~/.ssh/config`
+## SSH：key 缺了會自動產，但不會上傳，也會覆蓋 `~/.ssh/config`
 
-**這個 repo 不會產生任何 SSH key，也不會動到既有的 key。** 整包沒有一處執行
-`ssh-keygen` —— bootstrap 檢查清單只是把指令**印出來**給你自己決定要不要跑。
-`~/.ssh/` 底下的私鑰、公鑰、`known_hosts` 全部不在 chezmoi 的管理範圍。
+**`run_once_after_35-ssh-keys.sh` 會在 key 不存在時產一把**（ed25519、無 passphrase）。
+**既有的 key 絕對不動** —— 每一把都先檢查檔案在不在。私鑰不進版控、不上傳、
+不備份進 Bitwarden；`known_hosts` 也不在 chezmoi 的管理範圍。
+
+**公鑰的上傳沒有自動化**，那一步會動到 GitHub 帳號，而且公司跟個人是兩套流程（見下）。
+`run_once_after_40` 會用 `ssh -T` 檢查 GitHub 認不認得你的 key，沒過就印出該跑的指令。
 
 **但 `~/.ssh/config` 本身是 chezmoi 管的，apply 會整份覆蓋。**
 手改過的內容要先搬進 `private_dot_ssh/private_config.tmpl`，不然會被蓋掉。
@@ -267,17 +271,34 @@ key 的**檔名**不寫在這個 public repo 裡，預設用慣例名稱：
 `github-personal` alias：
 
 ```bash
-git remote set-url origin git@github-personal:RammusXu/repo.git
-ssh -T git@github-personal    # 驗證：應該回 Hi <你的個人帳號>
+git remote set-url origin git@github-personal:rammusxu/repo.git
+ssh -T git@github-personal    # 驗證：應該回 Hi rammusxu
 ```
+
+**這個 dotfiles repo 自己也算個人 repo。** bootstrap 只能用匿名 HTTPS clone
+（新機還沒有 key），clone 完就要把 remote 換過去，否則之後的 `make pull` / push
+會走 HTTPS，用到的是「gh 目前 active 的帳號」—— 可能是公司帳號：
+
+```bash
+git -C ~/personal/dotfiles remote set-url origin git@github-personal:rammusxu/dotfiles.git
+```
+
+**不要跑 `gh auth setup-git`。** 它會把 credential helper 寫進 `~/.gitconfig`，
+而那個檔是 chezmoi 管的 —— 下次 `make apply` 就靜悄悄刪掉了。走 SSH 不需要它。
+理由見 `docs/DECISIONS.md`「[SSH 還是 HTTPS](docs/DECISIONS.md#ssh-還是-https)」。
 
 ## 換機待辦（chezmoi 管不到的）
 
 - [ ] `~/.zshenv`：`make secrets`（**刻意不進版控**）
 - [ ] 公司 git 身分：`git -C ~/workspace/任一repo config user.email` 不該是 `you@company.com`
-- [ ] `gh auth login`（選 HTTPS）→ `gh auth setup-git`
-- [ ] SSH key：新機產新的並上傳，舊 key 留在舊機。
-      remote 用 host alias（`git@github-work:...`），身分才不會打架
+- [ ] **公司**帳號：`gh auth login -h github.com -p ssh -w`（瀏覽器）→
+      `gh ssh-key add ~/.ssh/id_ed25519_work.pub`。
+      不要跑 `gh auth setup-git`（會被 chezmoi 蓋掉，走 SSH 也用不到）
+- [ ] **個人**帳號：**不登入 gh**。`cat ~/.ssh/id_ed25519_personal.pub | pbcopy` →
+      到 github.com/settings/ssh/new 貼上（先確認登入的是 `rammusxu`）
+- [ ] key 檔案本身 apply 會自動產；舊機的 key 留在舊機，各自去 GitHub 撤銷
+- [ ] remote 用 host alias（`git@github-work:...` / `git@github-personal:...`），
+      包含這個 dotfiles repo 自己
 - [ ] `Brewfile.manual` 裡的項目（Docker Desktop 授權、Rectangle 輔助使用權限、Xnip、Orca）
 - [ ] `Brewfile.unmanaged` 裡想帶過去的 app（不會自動裝）
 - [ ] 2FA / Authenticator 轉移

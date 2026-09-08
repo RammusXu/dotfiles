@@ -3,17 +3,22 @@
 # 刻意全部只檢查不失敗 —— bootstrap 不該因為少一個 secret 就整個中斷。
 set -uo pipefail
 H="{{ .chezmoi.homeDir }}"
+SRC="{{ .chezmoi.sourceDir }}"
 WORK_EMAIL="{{ if hasKey . "workEmail" }}{{ .workEmail }}{{ else }}you@company.com{{ end }}"
 WORK_KEY="{{ if hasKey . "sshKeyWork" }}{{ .sshKeyWork }}{{ else }}id_ed25519_work{{ end }}"
+PERSONAL_KEY="{{ if hasKey . "sshKeyPersonal" }}{{ .sshKeyPersonal }}{{ else }}id_ed25519_personal{{ end }}"
+# 個人身分本來就在這個 public repo 裡（dot_gitconfig-personal.tmpl），寫死沒差。
+PERSONAL_EMAIL="comte_ken@hotmail.com"
+GH_PERSONAL="rammusxu"
 echo
 echo "──────────── bootstrap 檢查 ────────────"
 
 [ -f "$H/.zshenv" ] \
   && echo "  ✅ ~/.zshenv（secrets）" \
-  || echo "  ⬜ ~/.zshenv  →  export BW_SESSION=\$(bw unlock --raw) && {{ .chezmoi.sourceDir }}/scripts/secrets-restore.sh"
+  || echo "  ⬜ ~/.zshenv  →  export BW_SESSION=\$(bw unlock --raw) && $SRC/scripts/secrets-restore.sh"
 
 [ -f "$H/.env" ] \
-  && echo "  ⚠️  ~/.env 是舊位置 →  mv ~/.env ~/.zshenv && {{ .chezmoi.sourceDir }}/scripts/secrets-backup.sh"
+  && echo "  ⚠️  ~/.env 是舊位置 →  mv ~/.env ~/.zshenv && $SRC/scripts/secrets-backup.sh"
 
 case "$WORK_EMAIL" in
   you@company.com|"")
@@ -22,18 +27,75 @@ case "$WORK_EMAIL" in
     echo "  ✅ 公司 git 身分（~/workspace/ 底下的 repo 會用它）" ;;
 esac
 
-# 只檢查、不產生 —— 這個 repo 從來不會自己動 key。
-[ -f "$H/.ssh/${WORK_KEY}" ] \
-  && echo "  ✅ 公司 SSH key（~/.ssh/${WORK_KEY}）" \
-  || echo "  ⬜ 公司 SSH key →  ssh-keygen -t ed25519 -f ~/.ssh/${WORK_KEY} -C '$WORK_EMAIL' && gh ssh-key add ~/.ssh/${WORK_KEY}.pub"
+# ── SSH key 上傳了沒 ──
+# 檔案在不在由 run_once_after_35 負責（不在就產）。這裡問的是更有用的問題：
+# GitHub 那邊認不認得這把 key。一次 ssh -T 同時驗了三件事 ——
+# key 存在、已上傳、~/.ssh/config 的 alias 指對了。
+# BatchMode 避免它跳出來問密碼，accept-new 避免新機卡在 host authenticity。
+ssh_whoami() {
+  ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 \
+      -T "git@$1" 2>&1 | sed -n 's/^Hi \([A-Za-z0-9-]*\)!.*/\1/p'
+}
+KEY_TITLE="$(scutil --get ComputerName 2>/dev/null || hostname -s)"
 
-gh auth status >/dev/null 2>&1 \
-  && echo "  ✅ gh 已登入" \
-  || echo "  ⬜ gh 登入  →  gh auth login  (選 HTTPS) && gh auth setup-git"
+# 公司：走 gh CLI（本來就要用它開 PR），瀏覽器驗證後直接上傳。
+who_work="$(ssh_whoami github.com)"
+if [ -n "$who_work" ]; then
+  echo "  ✅ 公司 SSH key 已上傳（github.com → ${who_work}）"
+else
+  echo "  ⬜ 公司 SSH key 還沒上傳 →"
+  echo "       gh auth login -h github.com -p ssh -w        # 瀏覽器驗證"
+  echo "       gh ssh-key add ~/.ssh/${WORK_KEY}.pub -t '${KEY_TITLE}'"
+fi
+
+# 個人：刻意【不用】gh CLI —— 這台機器的個人帳號只需要 push/pull，那走 SSH 就夠，
+# 不必為它多掛一個 OAuth token，也少一個「active 帳號切錯」的失敗模式。
+# GitHub 回的是帳號的顯示大小寫（RammusXu），跟 URL 裡的小寫不一定一致，比對前先壓平。
+lc() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+who_personal="$(ssh_whoami github-personal)"
+if [ "$(lc "$who_personal")" = "$(lc "$GH_PERSONAL")" ]; then
+  echo "  ✅ 個人 SSH key 已上傳（github-personal → ${who_personal}）"
+else
+  echo "  ⬜ 個人 SSH key 還沒上傳（個人帳號不走 gh CLI，手動貼）→"
+  echo "       cat ~/.ssh/${PERSONAL_KEY}.pub | pbcopy"
+  echo "       開 https://github.com/settings/ssh/new （先確認登入的是 ${GH_PERSONAL}）貼上，標題 ${KEY_TITLE}"
+fi
+
+# ── gh：只給公司帳號用 ──
+if gh auth status >/dev/null 2>&1; then
+  gh_login='s/.*account \([A-Za-z0-9._-]*\).*/\1/p'
+  gh_active="$(gh auth status --active 2>&1 | sed -n "$gh_login" | head -1)"
+  echo "  ✅ gh 已登入，active = ${gh_active}"
+  case "$gh_active" in
+    "$GH_PERSONAL")
+      echo "     ⚠️  active 是個人帳號。這台機器的 gh 是給公司帳號用的 —— gh auth switch -u <公司帳號>" ;;
+  esac
+  [ "$(gh config get git_protocol -h github.com 2>/dev/null)" = "ssh" ] \
+    || echo "  ⬜ gh 的 git protocol 不是 ssh →  gh config set git_protocol ssh -h github.com"
+else
+  echo "  ⬜ gh 登入（公司帳號）→  gh auth login -h github.com -p ssh -w"
+fi
+
+# gh auth setup-git 會把 credential helper 寫進 ~/.gitconfig —— 那個檔是 chezmoi 管的，
+# 下次 apply 就整段刪掉，而且不會有任何警告。走 SSH remote 就根本不需要它。
+git config --global --get-regexp '^credential\.https://.*\.helper$' >/dev/null 2>&1 \
+  && echo "  ⚠️  ~/.gitconfig 裡有 gh auth setup-git 寫進去的 credential helper —— 不在 template 裡，下次 apply 會被刪。走 SSH remote 的話直接 git config --global --remove-section 'credential.https://github.com'"
+
+# ── 這個 repo 自己的 remote ──
+remote_url="$(git -C "$SRC" remote get-url origin 2>/dev/null || echo '')"
+case "$remote_url" in
+  git@github-personal:*)
+    echo "  ✅ dotfiles remote 走個人 SSH alias" ;;
+  "")
+    echo "  ⚠️  $SRC 沒有 origin remote？" ;;
+  *)
+    echo "  ⬜ dotfiles remote 還是 $remote_url"
+    echo "       →  git -C $SRC remote set-url origin git@github-personal:$GH_PERSONAL/dotfiles.git" ;;
+esac
 
 echo "  ⬜ Brewfile.manual：Docker Desktop 授權、Xnip (MAS)、Orca"
 echo "  ⬜ macOS 系統設定：全部手動（刻意不進版控）—— 鍵盤 / 觸控板 / Finder /"
 echo "     截圖 / Dock / 輸入法。清單見 README「換機待辦」，"
-echo "     舊機對照表：{{ .chezmoi.sourceDir }}/scripts/macos-defaults-dump.sh"
+echo "     舊機對照表：$SRC/scripts/macos-defaults-dump.sh"
 echo "────────────────────────────────────────"
 echo

@@ -1,0 +1,36 @@
+#!/bin/bash
+# 只做一件事：key 不在就產一把。
+#
+# 【絕不覆蓋既有的 key】—— 每一把都先 [ -f ] 擋過。
+# 【絕不上傳】—— 上傳會動到 GitHub 帳號（外部副作用），而且公司/個人是兩套完全
+#   不同的流程，留給人手動做。後面 run_once_after_40 的檢查清單會說怎麼傳。
+# 理由見 docs/DECISIONS.md「key 由 script 產，上傳永遠手動」。
+set -uo pipefail
+H="{{ .chezmoi.homeDir }}"
+WORK_EMAIL="{{ if hasKey . "workEmail" }}{{ .workEmail }}{{ else }}you@company.com{{ end }}"
+WORK_KEY="{{ if hasKey . "sshKeyWork" }}{{ .sshKeyWork }}{{ else }}id_ed25519_work{{ end }}"
+PERSONAL_KEY="{{ if hasKey . "sshKeyPersonal" }}{{ .sshKeyPersonal }}{{ else }}id_ed25519_personal{{ end }}"
+# 個人身分本來就在這個 public repo 裡（dot_gitconfig-personal.tmpl），寫死沒差。
+PERSONAL_EMAIL="comte_ken@hotmail.com"
+
+# gen <私鑰路徑> <comment>
+gen() {
+  if [ -f "$1" ]; then
+    echo "  ✅ 已存在，不動它：$1"
+    return 0
+  fi
+  # -N "" 無 passphrase：比照這台機器既有的慣例（key 只留本機，靠 FileVault 保護）。
+  if ssh-keygen -t ed25519 -f "$1" -C "$2" -N "" -q; then
+    echo "  🔑 產生：$1"
+  else
+    echo "  ❌ ssh-keygen 失敗：$1"
+  fi
+}
+
+echo
+echo "──────────── SSH key ────────────"
+mkdir -p "$H/.ssh" && chmod 700 "$H/.ssh"
+gen "$H/.ssh/${WORK_KEY}" "$WORK_EMAIL"
+gen "$H/.ssh/${PERSONAL_KEY}" "$PERSONAL_EMAIL"
+echo "  ↳ 公鑰的上傳沒有自動化，下面的檢查清單會列出還沒傳的。"
+echo "─────────────────────────────────"

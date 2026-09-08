@@ -10,12 +10,14 @@
 {{- if hasKey . "sshKeyPersonal" }}{{ $keyPersonal = .sshKeyPersonal }}{{ end -}}
 # 由 chezmoi 管理。這裡只有 host alias 與 key 路徑，沒有任何私鑰。
 #
-# ⚠️ 這個檔案【不會】產生 key，也不會動到既有的 key。整個 repo 沒有任何
-#    ssh-keygen 的執行（bootstrap 檢查清單只是把指令印出來給你看）。
-#    但它【會覆蓋 ~/.ssh/config 本身】—— 手改過的內容要先搬進這個 template。
+# ⚠️ 這個檔案本身只寫 ~/.ssh/config，不碰 key。key 缺了會由
+#    run_once_after_35-ssh-keys.sh 產（既有的絕對不動，公鑰不會自動上傳）。
+#    但這個檔【會覆蓋 ~/.ssh/config 本身】—— 手改過的內容要先搬進這個 template。
 #
-# 新機 bootstrap 時還沒有任何 key，所以 chezmoi 本身一律走 HTTPS clone
-# （見 docs/DECISIONS.md）。
+# 新機 bootstrap 時還沒有任何 key，所以【第一次】clone 只能走匿名 HTTPS。
+# key 產出來之後，dotfiles 自己的 remote 就要換成下面的 github-personal alias：
+#   git -C ~/personal/dotfiles remote set-url origin git@github-personal:rammusxu/dotfiles.git
+# 日常 git 一律 SSH，HTTPS 只留給那一次 bootstrap（見 docs/DECISIONS.md「SSH 還是 HTTPS」）。
 
 Host *
     AddKeysToAgent yes

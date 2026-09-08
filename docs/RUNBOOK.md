@@ -135,6 +135,7 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/bin init --apply --source=~/persona
 這一行做完的事：把 chezmoi binary 放進 `~/bin`（`~/.zprofile` 已經把它加進 PATH）→
 clone public repo（**匿名 HTTPS，不需要任何憑證**）→ 問 `role` 與公司 git 身分 →
 抓 oh-my-zsh / p10k → 寫 dotfiles → 跑 brew bundle → 裝 gcloud → 設 git hooks →
+缺的 SSH key 補產（既有的不動、公鑰不會自動上傳）→
 印出待辦清單。
 
 用 `curl` 而不是 `brew install chezmoi`：新機或 Linux 都是同一行，不用分歧。
@@ -150,12 +151,27 @@ clone public repo（**匿名 HTTPS，不需要任何憑證**）→ 問 `role` �
 export BW_SESSION=$(bw unlock --raw)
 ~/personal/dotfiles/scripts/secrets-restore.sh   # ~/.zshenv
 
-gh auth login        # 選 HTTPS
-gh auth setup-git
+# 兩把 key（work / personal）在 apply 時就由 run_once_after_35 產好了，
+# 這裡只剩「把公鑰交給 GitHub」，公司跟個人是兩套流程。
 
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work -C "$(git -C ~/workspace config user.email)"
-gh ssh-key add ~/.ssh/id_ed25519_work.pub
+# ── 公司帳號：gh CLI ──
+# ⚠️ 一定要 -w 走瀏覽器。選 "Paste an authentication token" 貼舊 PAT 會拿到 401。
+# ⚠️ 不要跑 gh auth setup-git —— 它寫進 ~/.gitconfig，下次 apply 會被 chezmoi 刪掉。
+gh auth login -h github.com -p ssh -w
+gh ssh-key add ~/.ssh/id_ed25519_work.pub -t "$(scutil --get ComputerName)"
+
+# ── 個人帳號：不碰 gh，手動貼 ──
+cat ~/.ssh/id_ed25519_personal.pub | pbcopy
+open https://github.com/settings/ssh/new    # 先確認瀏覽器登入的是 rammusxu
+
+# 這個 repo 自己的 remote 從匿名 HTTPS 換成個人 SSH alias。
+git -C ~/personal/dotfiles remote set-url origin git@github-personal:rammusxu/dotfiles.git
+
+ssh -T git@github.com          # 應該回 Hi <公司帳號>
+ssh -T git@github-personal     # 應該回 Hi rammusxu
 ```
+
+為什麼是 SSH 不是 HTTPS，見 DECISIONS「[SSH 還是 HTTPS](DECISIONS.md#ssh-還是-https)」。
 
 第 ② 步結束時終端機會印出這份清單，缺什麼一目瞭然。**它只印不失敗** ——
 bootstrap 不該因為少一個 secret 就整個中斷。
@@ -402,6 +418,9 @@ make doctor    # 先跑這個：檢查 source-path / chezmoi.toml / ~/.zshenv �
 | plugin 沒載入 / 補完失效 | `.chezmoidata.yaml` 列了，但 `.chezmoiexternal` 沒有對應來源；或該 `make refresh` |
 | `git commit` 說不知道你是誰 | 這個 repo 刻意沒有預設 git 身分，見 [DECISIONS](DECISIONS.md)「一台機器兩個身分」 |
 | `git push` 認證失敗 / 認成錯的帳號 | `ssh -T git@github.com` 看它回哪個帳號。不帶 alias 的 URL 預設是公司身分；個人 repo 要 `git remote set-url origin git@github-personal:…` |
+| `git push` 突然開始問帳號密碼 | remote 是 HTTPS，而 `gh auth setup-git` 寫在 `~/.gitconfig` 的 credential helper 剛被 apply 刪掉。**不要重跑 setup-git**（會再被刪一次），把 remote 換成 SSH alias |
+| `gh` 開在錯的帳號底下 | 這台機器的 gh **只該登入公司帳號**（個人帳號刻意不掛 gh）。`gh auth status` 看一下，多的用 `gh auth logout` |
+| `gh auth login` 回 `HTTP 401: Bad credentials` | 選到了 "Paste an authentication token" 而那把 PAT 已失效。改用 `-w` 走瀏覽器 OAuth |
 | 環境變數設了卻沒生效 | 看放對檔案了嗎：secret → `~/.zshenv`；PATH → `~/.zprofile`；alias / 補完 → `~/.zshrc`。三者的差別見 [DECISIONS](DECISIONS.md)「zsh 的設定檔只留三個」 |
 | commit 被 pre-commit 擋下 | 訊息會說是哪一類（secret 檔名 / 上游依賴 / pattern / gitleaks）。確定誤判才 `--no-verify` |
 | apply 變慢 | [為什麼 apply 這麼快（以及變慢時怎麼查）](#為什麼-apply-這麼快以及變慢時怎麼查) |
