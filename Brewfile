@@ -22,7 +22,9 @@ brew "zoxide"          # omz zoxide plugin 要它
 # --- 這套 dotfiles 自己要用 ---
 brew "gitleaks"        # pre-commit hook 用它擋 secret 進 public repo
 brew "bitwarden-cli"   # 還原 ~/.zshenv（scripts/secrets-restore.sh）
-# chezmoi 本身刻意用 curl 裝在 ~/bin —— 新機第一步不該依賴 brew，見 DECISIONS
+# chezmoi 本身刻意不放這裡 —— 它是 bootstrap 第一步，不該依賴自己管的 Brewfile。
+# 改用 curl installer 帶 `-b ~/bin` 明示位置（預設會裝到 cwd/bin，是個靜默的坑）。
+# 見 DECISIONS「為什麼 chezmoi 自己不用 brew 裝」。
 
 # --- core cli ---
 brew "git"

@@ -129,14 +129,20 @@ Homebrew 一定要先裝，因為 `run_onchange_after_10-brew.sh` 需要它。
 **② chezmoi**（一行）
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply --source=~/personal/dotfiles rammusxu
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/bin init --apply --source=~/personal/dotfiles rammusxu
 ```
 
-這一行做完的事：clone public repo（**匿名 HTTPS，不需要任何憑證**）→ 問 `role` 與
-公司 git 身分 → 抓 oh-my-zsh / p10k → 寫 dotfiles → 跑 brew bundle → 裝 gcloud →
-設 git hooks → 印出待辦清單。
+這一行做完的事：把 chezmoi binary 放進 `~/bin`（`~/.zprofile` 已經把它加進 PATH）→
+clone public repo（**匿名 HTTPS，不需要任何憑證**）→ 問 `role` 與公司 git 身分 →
+抓 oh-my-zsh / p10k → 寫 dotfiles → 跑 brew bundle → 裝 gcloud → 設 git hooks →
+印出待辦清單。
 
 用 `curl` 而不是 `brew install chezmoi`：新機或 Linux 都是同一行，不用分歧。
+理由見 DECISIONS「[為什麼 chezmoi 自己不用 brew 裝](DECISIONS.md#為什麼-chezmoi-自己不用-brew-裝)」。
+
+> **`-b ~/bin` 不能省。** installer 的預設是裝到**當下工作目錄的 `./bin`**。
+> 沒站在 `$HOME` 跑就會裝到別的地方，症狀是後來 `make apply` 說
+> `make: chezmoi: No such file or directory`。
 
 **③ 補憑證**（chezmoi 管不到的）
 
@@ -390,6 +396,7 @@ make doctor    # 先跑這個：檢查 source-path / chezmoi.toml / ~/.zshenv �
 
 | 症狀 | 先看這裡 |
 |---|---|
+| `make: chezmoi: No such file or directory` | binary 不在 PATH 上。bootstrap 那行漏了 `-b ~/bin`，installer 就把它丟在當時的工作目錄下：`find ~ -maxdepth 4 -type f -name chezmoi` 找出來 `mv` 到 `~/bin/` 即可（config 和 source dir 都不受影響，不用重跑 init） |
 | `chezmoi managed` 是空的、apply 什麼都沒發生 | `make doctor`。幾乎都是 source dir 指到別的 clone，見 [DECISIONS](DECISIONS.md)「為什麼 source dir 設在 ~/personal/dotfiles」 |
 | 改了 Brewfile 但 brew bundle 沒跑 | `run_onchange_after_10-brew.sh.tmpl` 開頭的 hash 行還在嗎 |
 | plugin 沒載入 / 補完失效 | `.chezmoidata.yaml` 列了，但 `.chezmoiexternal` 沒有對應來源；或該 `make refresh` |

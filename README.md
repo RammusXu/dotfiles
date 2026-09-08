@@ -22,7 +22,7 @@ xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # ② 一行搞定 dotfiles（會問 3 個問題，見下面）
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply --source=~/personal/dotfiles rammusxu
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/bin init --apply --source=~/personal/dotfiles rammusxu
 
 # ③ 補 secret
 export BW_SESSION=$(bw unlock --raw)
@@ -32,10 +32,16 @@ export BW_SESSION=$(bw unlock --raw)
 ② 結束時會印出一份「chezmoi 管不到的」待辦清單（SSH key、gh 登入、需要授權的 app…）。
 **它只印不失敗** —— bootstrap 不該因為少一個 secret 就整個中斷。
 
-> **`--source` 不能省。** 這個 repo 把 source dir 釘在 `~/personal/dotfiles`，
-> 忘了帶的話 chezmoi 會 clone 到預設的 `~/.local/share/chezmoi`，而 config 指向
-> `~/personal/dotfiles`（空的）—— 症狀是 `chezmoi managed` 什麼都沒有，而且**不會報錯**。
-> 懷疑的時候跑 `make doctor`。
+> **`-b ~/bin` 和 `--source` 都不能省。** 兩個都是靜默失敗：
+>
+> - **`-b ~/bin`**：installer 的預設安裝位置是**當下工作目錄的 `./bin`**，不是 `~/bin`。
+>   沒站在 `$HOME` 跑的話 binary 會掉在隨便一個地方，之後 `make apply` 只會說
+>   `make: chezmoi: No such file or directory`，完全看不出原因。
+> - **`--source`**：這個 repo 把 source dir 釘在 `~/personal/dotfiles`，忘了帶的話
+>   chezmoi 會 clone 到預設的 `~/.local/share/chezmoi`，而 config 指向
+>   `~/personal/dotfiles`（空的）—— 症狀是 `chezmoi managed` 什麼都沒有，而且**不會報錯**。
+>
+> 懷疑的時候跑 `make doctor`，兩件事它都會檢查。
 
 `init` 會問三個問題，答案存在 `~/.config/chezmoi/chezmoi.toml`（在 `$HOME`，不進版控）：
 

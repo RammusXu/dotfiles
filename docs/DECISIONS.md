@@ -32,6 +32,27 @@
 
 想試的話裝在備援機上 —— 那正好是可以隨便弄壞的實驗場。
 
+## 為什麼 chezmoi 自己不用 brew 裝
+
+chezmoi 是**唯一**不在 Brewfile 裡的工具，用 `curl | sh` 裝進 `~/bin`。
+
+因為它是 bootstrap 的第一步：Brewfile 是 chezmoi **管的東西**，chezmoi 不能反過來
+依賴它。而且同一行在 macOS 和 Linux 都能跑，新機流程不用分歧。
+
+### 代價：`-b ~/bin` 也不能省
+
+`get.chezmoi.io` 的 installer 預設裝到**當下工作目錄的 `./bin`**（不是 `~/bin`，
+也不是任何 PATH 上的位置）。站在 `$HOME` 跑剛好對，站在別的地方跑就錯 ——
+而且當下不會有任何抱怨，binary 確實裝好了，只是在一個沒人會找的地方。
+
+2026-09-08 真的踩到：在 `~/work/playground-tmp/` 跑 bootstrap，binary 進了
+`~/work/playground-tmp/bin/chezmoi`。config 和 clone 都是好的，隔天 `make apply`
+只吐一句 `make: chezmoi: No such file or directory`，看不出跟工作目錄有關。
+
+所以 bootstrap 指令固定帶 `-b ~/bin`，`make doctor` 也會檢查 binary 的位置。
+這跟 `--source` 是同一類毛病：**預設值是相對於「你當下在哪」而不是「你要什麼」**，
+失敗又是靜默的。凡是這種，就把它明示在指令裡。
+
 ## 為什麼用 Homebrew 裝 GUI app
 
 價值不在省下安裝的三分鐘，在於**有一份可描述「這台機器該有什麼」的清單**。

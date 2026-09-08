@@ -53,6 +53,12 @@ prune: ## 列出「機器上有但 Brewfile 沒宣告」的東西並產生 unins
 	@./scripts/brew-prune.sh
 
 doctor: ## 檢查這台機器的 chezmoi 接線有沒有接對
+	@# binary 要先在 PATH 上，不然下面每一行都是 command not found
+	@echo "chezmoi bin : $$(command -v chezmoi || echo '（找不到）')"
+	@echo "  應該是      : $(HOME)/bin/chezmoi"
+	@test "$$(command -v chezmoi)" = "$(HOME)/bin/chezmoi" \
+	  && echo "  ✅ 一致" \
+	  || echo "  ⚠️  不在 ~/bin —— bootstrap 漏了 -b ~/bin？見 RUNBOOK「出事了怎麼查」"
 	@echo "source-path : $$(chezmoi source-path)"
 	@echo "  應該是      : $(HOME)/personal/dotfiles"
 	@test "$$(chezmoi source-path)" = "$(HOME)/personal/dotfiles" \
