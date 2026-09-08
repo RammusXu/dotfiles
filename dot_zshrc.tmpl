@@ -50,6 +50,11 @@ fi
 # bun 的補完
 [ -s "{{ .chezmoi.homeDir }}/.bun/_bun" ] && source "{{ .chezmoi.homeDir }}/.bun/_bun"
 
+# gcloud 的補完（PATH 在 .zprofile）。install.sh 帶 --command-completion false，
+# 由這一行負責 —— 讓 install.sh 自己去 append，那一行會被下次 apply 還原掉。
+[ -f "{{ .chezmoi.homeDir }}/google-cloud-sdk/completion.zsh.inc" ] \
+  && source "{{ .chezmoi.homeDir }}/google-cloud-sdk/completion.zsh.inc"
+
 # VS Code 的 shell integration（只在 VS Code 的終端機裡）
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 

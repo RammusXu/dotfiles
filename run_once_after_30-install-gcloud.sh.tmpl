@@ -27,6 +27,9 @@ curl -fsSL -o "$TMP/$PKG" "https://dl.google.com/dl/cloudsdk/channels/rapid/down
 tar -xf "$TMP/$PKG" -C "{{ .chezmoi.homeDir }}"
 rm -rf "$TMP"
 
-"$SDK_DIR/install.sh" --quiet --command-completion true --path-update false
-echo "==> ✅ gcloud 裝好了。PATH 由 ~/.common_env 負責載入。"
+# 兩個都 false：rc 檔由 chezmoi 管，讓 install.sh 去 append 的話，那幾行不在版控裡，
+# 下次 apply 會直接被還原掉 —— 而這支是 run_once_，不會再跑第二次來補回去。
+# PATH → dot_zprofile.tmpl（path.zsh.inc）、補完 → dot_zshrc.tmpl（completion.zsh.inc）。
+"$SDK_DIR/install.sh" --quiet --command-completion false --path-update false
+echo "==> ✅ gcloud 裝好了。PATH 在 ~/.zprofile、補完在 ~/.zshrc，都由 chezmoi 管。"
 {{- end -}}

@@ -85,6 +85,27 @@ cask 版 `gcloud-cli` **`depends_on python@3.x`**。Homebrew 升 Python minor �
 
 → `run_once_after_30-install-gcloud.sh.tmpl`，之後更新走 `gcloud components update`。
 
+### install.sh 的兩個 flag 都要 false
+
+```
+--path-update false --command-completion false
+```
+
+gcloud 的 `install.sh` 預設會**直接 append 幾行到 `~/.zshrc`**。這裡的 rc 檔全部由
+chezmoi 管，所以那幾行的下場是：不在版控裡 → 下次 apply 被還原掉 → 補完安靜消失。
+而這支是 `run_once_`，不會再跑第二次來補回去。
+
+2026-09-08 就是這樣掉的：`~/.zshrc` 尾巴多了一行 gcloud 補完，`chezmoi diff` 顯示
+下次 apply 會刪掉它。改成兩個 flag 都 false，兩件事各自進版控：
+
+| | 由誰負責 |
+|---|---|
+| PATH（`path.zsh.inc`） | `dot_zprofile.tmpl` |
+| 補完（`completion.zsh.inc`） | `dot_zshrc.tmpl` |
+
+**通則：任何第三方 installer 都不准碰 rc 檔。** 一律關掉它的 rc-writing flag，
+自己在 template 裡寫一行 guard 過的 `source`。
+
 ## 為什麼 oh-my-zsh 不 vendor 進 repo
 
 舊做法是把整包 oh-my-zsh（11MB / 1139 個檔案）commit 進來，更新要手動
