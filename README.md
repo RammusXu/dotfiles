@@ -226,8 +226,11 @@ make secrets                             # ② 新機或別台機器 → 拉回�
 bw get notes dotfiles/zshenv | diff - ~/.zshenv    # ③ 只想看跟遠端差在哪
 ```
 
-① 刻意不自動寫入 Bitwarden，只印出「貼進哪個 Secure Note」的指示 ——
-整份 secret 不經過 shell history 和 process list。
+① 直接寫進 Bitwarden（item 不存在就建、存在就更新），寫之前先印出跟遠端的 diff
+並要你確認 —— 值的部分會遮成 `export FOO=<省略>`，只讓你看是哪幾個變數變了。
+內容跟遠端一樣就不動它。secret 全程走 stdin（`jq --rawfile` → `bw encode` →
+`bw create/edit item`），不經過 argv，所以不會出現在 shell history 或 process list。
+非互動環境（CI、pipe）要跑得加 `-y`（`make secrets-save ARGS=-y`），否則它會停下來而不是默默覆蓋。
 ② 會把舊檔備份成 `~/.zshenv.bak.<timestamp>`，寫入後 `chmod 600`，開新 shell 生效。
 
 兩支 script 都吃參數（`secrets-restore.sh <item> <目標檔>`），要分公司/個人兩份 note 時直接用。

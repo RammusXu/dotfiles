@@ -113,14 +113,16 @@ zsh 自己就有明確的分工，照它的規則走就不需要自訂的載入�
 [ -f "$HOME/.zprofile.local" ] && source "$HOME/.zprofile.local"
 ```
 
-**為什麼不直接寫進 `~/.zshenv`。** 那是最方便的做法，也是錯的 —— `~/.zshenv` 是
-Bitwarden 的還原目標，而兩個方向不對稱：
+**為什麼不直接寫進 `~/.zshenv`。** 那是最方便的做法，也是錯的 —— `~/.zshenv` 整
+檔就是 Bitwarden 那顆 Secure Note 的內容（`secrets-restore.sh` 是 `bw get notes >
+~/.zshenv`，**整檔覆蓋**；`secrets-backup.sh` 反過來把整檔寫回 note）。把「只有
+這台機器要」的設定加進去，等於宣告它要同步到**每一台**機器 —— 這正好是這類設定
+不該有的性質。而且哪台機器最後跑 `make secrets-save`，note 就長它的樣子，其他機器
+下次 restore 就被覆蓋掉，沒有任何錯誤訊息。`~/.zshenv` 該只放 secret，一種東西一個家。
 
-- `secrets-restore.sh` 是 `bw get notes > ~/.zshenv`，**整檔覆蓋**
-- `secrets-backup.sh` 是**手動**貼進 Bitwarden GUI（刻意的，見 Secret 策略那節）
-
-所以加在 `~/.zshenv` 的非 secret 設定不會自動進 Bitwarden，下次換機或還原時就
-**無聲消失**，沒有任何錯誤訊息。`~/.zshenv` 該只放 secret，一種東西一個家。
+> 2026-09 之前 `secrets-backup.sh` 是印指示叫你手動貼進 GUI，那時的失敗模式是
+> 「加進去的東西根本沒進 Bitwarden，換機就無聲消失」。改成自動寫入之後失敗模式
+> 換了個方向（變成無聲同步到每台機器），結論沒變。
 
 **為什麼「有這個出口」這件事要進版控。** 出口裡的內容不進版控，但那一行 source
 進。這樣換機時看 `~/.zprofile` 就知道還有一個本機檔案要補，而不是三個月後對著一個

@@ -70,5 +70,5 @@ doctor: ## 檢查這台機器的 chezmoi 接線有沒有接對
 secrets: ## 從 Bitwarden 還原 ~/.zshenv（需要先 export BW_SESSION）
 	@./scripts/secrets-restore.sh
 
-secrets-save: ## 把 ~/.zshenv 存回 Bitwarden
-	@./scripts/secrets-backup.sh
+secrets-save: ## 把 ~/.zshenv 寫回 Bitwarden（先給 diff 確認；ARGS=-y 跳過確認）
+	@./scripts/secrets-backup.sh $(ARGS)
