@@ -165,7 +165,7 @@ cat ~/.ssh/id_ed25519_personal.pub | pbcopy
 open https://github.com/settings/ssh/new    # 先確認瀏覽器登入的是 rammusxu
 
 # 這個 repo 自己的 remote 從匿名 HTTPS 換成個人 SSH alias。
-git -C ~/personal/dotfiles remote set-url origin git@github-personal:rammusxu/dotfiles.git
+git -C ~/personal/dotfiles remote set-url origin git@github-personal:RammusXu/dotfiles.git
 
 ssh -T git@github.com          # 應該回 Hi <公司帳號>
 ssh -T git@github-personal     # 應該回 Hi rammusxu

@@ -313,10 +313,21 @@ repo 層級的權限交給 org 那邊控。
 clone 完、key 產出來之後，把 source dir 自己的 remote 換過去：
 
 ```bash
-git -C ~/personal/dotfiles remote set-url origin git@github-personal:rammusxu/dotfiles.git
+git -C ~/personal/dotfiles remote set-url origin git@github-personal:RammusXu/dotfiles.git
 ```
 
 `run_once_after_40` 會檢查這件事，沒換過就每次都印待辦。
+
+**注意 GitHub 給的建議 URL 不能照抄。** 2026-09-08 第一次 push 時它回：
+
+```
+remote: This repository moved. Please use the new location:
+remote:   git@github.com:RammusXu/dotfiles.git
+```
+
+「大小寫要用 `RammusXu`」是對的（`rammusxu` 走 redirect），但**那串 host 是
+`github.com`，照貼就會掉回公司 key**。正確寫法是把 alias 保留：
+`git@github-personal:RammusXu/dotfiles.git`。
 
 HTTPS 還留著一個場景：企業防火牆、CI runner、container 常常只放行 443，SSH 的 22 port
 直接被擋，那種環境反過來用 HTTPS + PAT。**但不要把 PAT 貼進 URL**

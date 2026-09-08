@@ -271,7 +271,7 @@ key 的**檔名**不寫在這個 public repo 裡，預設用慣例名稱：
 `github-personal` alias：
 
 ```bash
-git remote set-url origin git@github-personal:rammusxu/repo.git
+git remote set-url origin git@github-personal:RammusXu/repo.git
 ssh -T git@github-personal    # 驗證：應該回 Hi rammusxu
 ```
 
@@ -280,7 +280,7 @@ ssh -T git@github-personal    # 驗證：應該回 Hi rammusxu
 會走 HTTPS，用到的是「gh 目前 active 的帳號」—— 可能是公司帳號：
 
 ```bash
-git -C ~/personal/dotfiles remote set-url origin git@github-personal:rammusxu/dotfiles.git
+git -C ~/personal/dotfiles remote set-url origin git@github-personal:RammusXu/dotfiles.git
 ```
 
 **不要跑 `gh auth setup-git`。** 它會把 credential helper 寫進 `~/.gitconfig`，
