@@ -2,7 +2,8 @@
 # 從 Bitwarden 把 ~/.zshenv 拉回來。新機 bootstrap 的第二步。
 #
 # 為什麼是 ~/.zshenv：zsh 會在每個 shell 啟動時自動讀它，是放環境變數的慣例位置，
-#   不用在 .zshrc 手動 source（bash 那邊由 ~/.common_env 補一次）。
+#   不用在 .zshrc 手動 source。（只顧 zsh —— 2026-09 起 bash 那條路徑連同
+#   ~/.common_env 一起移除了，見 DECISIONS「zsh 的設定檔只留三個」。）
 # 為什麼是 Bitwarden 而不是 chezmoi 加密：
 #   這是 public repo。就算加密，密文也是公開的，只要金鑰哪天外流就全部回溯解開。
 #   把 secret 完全不放進 repo，是「結構上不可能洩漏」，而不是「加密所以應該還好」。
