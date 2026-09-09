@@ -29,6 +29,7 @@ brew "bitwarden-cli"   # 還原 ~/.zshenv（scripts/secrets-restore.sh）
 # --- core cli ---
 brew "git"
 brew "gh"
+brew "glab"
 brew "jq"
 brew "yq"
 brew "tree"
