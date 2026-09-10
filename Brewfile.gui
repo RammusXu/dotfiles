@@ -15,3 +15,4 @@ cask "google-chrome"          # homebrew/cask（官方 tap）｜binary: dl.googl
 cask "visual-studio-code"     # homebrew/cask（官方 tap）｜binary: update.code.visualstudio.com（Microsoft 官方）
 cask "obsidian"               # homebrew/cask（官方 tap）｜binary: github.com/obsidianmd 官方 release
 cask "bitwarden"              # homebrew/cask（官方 tap）｜binary: github.com/bitwarden 官方 release
+cask "rectangle"              # homebrew/cask（官方 tap）｜binary: github.com/rxhanson/Rectangle 官方 release

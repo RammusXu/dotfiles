@@ -11,11 +11,14 @@ set -euo pipefail
 command -v brew >/dev/null 2>&1 || \
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-echo "==> 🍺 brew bundle (CLI)"
-brew bundle --file="{{ .chezmoi.sourceDir }}/Brewfile"
+# --no-upgrade：這支 script 只負責「把缺的裝起來」。
+# brew bundle 預設會順手 upgrade 所有 outdated 的東西，但升級是 `make update` 的事
+# —— 不該在 make quick / apply 的時候偷偷發生（會拖很久，也可能在忙的時候換掉工具版本）。
+echo "==> 🍺 brew bundle (CLI — 只補裝，不升級)"
+brew bundle --no-upgrade --file="{{ .chezmoi.sourceDir }}/Brewfile"
 
 {{ if eq $role "primary" }}
-echo "==> 🖥  brew bundle (GUI casks — primary only)"
+echo "==> 🖥  brew bundle (GUI casks — primary only，只補裝，不升級)"
 # 刻意【不】讓 GUI cask 的失敗中斷整個 apply —— 跟 bootstrap 檢查清單同一個原則：
 # 少一個 GUI app 不該讓 dotfiles / CLI 工具也套用不完。
 #
@@ -23,7 +26,7 @@ echo "==> 🖥  brew bundle (GUI casks — primary only)"
 # Homebrew 6 會嘗試 adopt 它，而 adopt 會跑 `sudo chmod -R a+rX`，
 # chezmoi 的 script 環境沒有 TTY 可以輸入密碼 → cask 失敗 → brew bundle 回 1。
 # 新機器不會遇到（/Applications 是空的，不需要 adopt）。
-if ! brew bundle --file="{{ .chezmoi.sourceDir }}/Brewfile.gui"; then
+if ! brew bundle --no-upgrade --file="{{ .chezmoi.sourceDir }}/Brewfile.gui"; then
   echo
   echo "⚠️  有 GUI cask 沒裝成 —— 上面的訊息會說是哪一個。"
   echo "    如果原因是「已經有一份手動裝的 app」，在【真的終端機】跑一次："

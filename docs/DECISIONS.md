@@ -66,6 +66,11 @@ chezmoi 是**唯一**不在 Brewfile 裡的工具，用 `curl | sh` 裝進 `~/bi
   放進 `run_onchange` 會讓新機 bootstrap 卡在密碼提示，這對無人值守的 script 是致命的。
 - `version :latest` 的 cask 不驗 checksum，上游改連結時會壞幾天。無解，知道就好。
 - `brew bundle` 只裝不移。定期 `brew bundle cleanup --file=Brewfile`（先看 dry-run）。
+- **`run_onchange` 的 brew bundle 一律帶 `--no-upgrade`。** Homebrew 6 的 `brew bundle`
+  預設是 install **+ upgrade**（`--help` 第一行就寫了），所以只要動過 Brewfile，
+  下一次 `make quick` 就會順手升級所有 outdated 的 formula 和 cask —— 那不是
+  `make quick` 該做的事：它會突然拖很久，還可能在你正在用的時候換掉工具版本。
+  升級的入口只有一個：`make update`。
 
 ## 為什麼 Brewfile 拆成三份
 
