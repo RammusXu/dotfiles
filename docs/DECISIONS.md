@@ -106,6 +106,53 @@ chezmoi 管，所以那幾行的下場是：不在版控裡 → 下次 apply 被
 **通則：任何第三方 installer 都不准碰 rc 檔。** 一律關掉它的 rc-writing flag，
 自己在 template 裡寫一行 guard 過的 `source`。
 
+## npm / python 套件怎麼管
+
+2026-09-10 盤點時，這台機器的全域套件是**零**：`npm ls -g` 只有 npm 自己，
+`uv tool list` 是空的，pipx 早就移掉了。非 brew 的 CLI 只有兩個 —— `~/bin/chezmoi`
+和 `~/.local/bin/claude`，兩個都自帶 installer。所以下面記的是**規則，不是現況**，
+趁還沒亂之前先定好。
+
+### 先分成三種，不要混為一談
+
+| 種類 | 例子 | 歸誰管 |
+|---|---|---|
+| **專案依賴** | repo 裡的 `package.json` / `pyproject.toml` | **不進 dotfiles**。lockfile 在專案 repo 裡，dotfiles 只要保證 `node` / `uv` 在 |
+| **全域 CLI 工具** | `prettier`、`ruff`、`httpie` 這種在哪都想打的 | 這才是要管的那類，見下面的順序 |
+| **自帶 updater** | `claude`、`gcloud`、`chezmoi` | 不要用套件管理器去管會自我更新的東西（gcloud 的先例見上面「[為什麼 gcloud 不用 cask](#為什麼-gcloud-不用-cask)」） |
+
+大宗是第一類，而它根本不該出現在這個 repo 裡。真正需要決策的只有第二類。
+
+### 全域 CLI 工具的優先順序
+
+**1. 能 brew 就 brew。** `ruff` / `prettier` / `httpie` / `black` 這些熱門 CLI 都有 formula。
+進 `Brewfile` 就自動吃到現有的一切：`make audit`、`make prune`、換機自動裝、
+INVENTORY 的收錄原則。**多一個套件來源就是多一份要各自維護的清單**，能不開就不開。
+
+**2. Python 沒有 formula → `uv tool install`**（不是 `pip install --user`）。
+每個工具一個獨立 venv，不會互相打架。執行檔落在 `~/.local/bin`，
+`dot_zprofile.tmpl` 的 PATH 已經包含它，不用改設定。
+
+**3. `npm -g` 放最後，而且要知道代價。** 這台的 npm prefix 是 `/opt/homebrew`：
+
+- `brew uninstall node` 會**一起帶走**所有全域套件
+- **`make prune` 看不到它們** —— `scripts/brew-prune.sh` 只盤 brew，
+  npm 裝的東西在它眼裡不存在
+
+也就是說 `npm -g` 會在現有的盤點機制上開一個洞。只有「真的只有 npm 才有」的工具走這條。
+
+### 為什麼現在不建機制
+
+可以做的是：清單進 `.chezmoidata.yaml`（照 zsh plugin 那套）、
+`run_onchange_after_15-lang-tools.sh.tmpl` 帶 hash 觸發行、`brewfile-audit.sh`
+補一段盤 `uv tool list`。**刻意不做**，理由是 INVENTORY 那條收錄原則：
+
+> 真正的成本是「一份沒人敢動的清單」
+
+為零個套件先蓋一套清單 + 安裝腳本 + audit 擴充，就是在製造那種清單。
+跟 `age` 的處理一致 —— 需要的那天再建，不為假設的例外在每台機器多帶一份維護負擔。
+**觸發條件：出現第三個非 brew 的全域工具時**，就照上面那個長相補齊。
+
 ## 為什麼 oh-my-zsh 不 vendor 進 repo
 
 舊做法是把整包 oh-my-zsh（11MB / 1139 個檔案）commit 進來，更新要手動

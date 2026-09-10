@@ -32,6 +32,17 @@
 判斷的時候不要只看 shell history：像 `terraform` 在 history 裡是 0 筆，
 但 `~/.terraform.d/` 上個月才動過。兩種證據都要看。
 
+## 非 brew 的全域工具
+
+**目前是零個**（2026-09-10 盤點：`npm ls -g` 只有 npm 自己，`uv tool list` 空的）。
+`~/bin/chezmoi` 和 `~/.local/bin/claude` 不算 —— 兩個都自帶 installer 和自我更新。
+
+要裝全域 CLI 工具時的順序是 **brew → `uv tool install` → `npm -g`**，
+理由（尤其是「`npm -g` 會讓 `make prune` 看不到」）見
+[DECISIONS「npm / python 套件怎麼管」](DECISIONS.md#npm--python-套件怎麼管)。
+
+還沒有第四份清單來管它們，這是刻意的。出現第三個非 brew 的全域工具時再建。
+
 ## zsh plugin：只有清單，沒有內容
 
 **oh-my-zsh、powerlevel10k、zsh plugin 的內容一個字都不在這個 repo 裡。**
