@@ -59,9 +59,14 @@ chezmoi 是**唯一**不在 Brewfile 裡的工具，用 `curl | sh` 裝進 `~/bi
 
 心態要調對：**Brewfile 管的是清單，不是版本。** 它不 pin GUI app 版本，不是 lockfile。
 
-- cask metadata 有 `auto_updates true`（Chrome / VS Code / Obsidian / Linear 都是），
-  `brew upgrade --cask` **預設會跳過**，讓 app 自己更新。**不要用 `--greedy` 去接管**，
-  那是跟 app 自身更新機制打架的開始。
+- cask metadata 有 `auto_updates true`（Chrome / VS Code / Obsidian / Linear 都是）。
+  **Homebrew 6 起這種 cask 預設【會】被升級**（`HOMEBREW_UPGRADE_AUTO_UPDATES_CASKS`
+  的 default 是 true），不再是舊時代的「一律跳過」。
+  但它不會把 app 降版：`Cask#auto_updates_bundle_outdated?` 是去讀
+  `Xxx.app/Contents/Info.plist` 的真實版本跟 tap 比，只有 app **確實比較舊**才升；
+  app 自己更新到比 tap 新的時候直接不動它，讀不到版本也一律不動。
+- **不要用 `--greedy`。** 它繞過上面那個 Info.plist 版本檢查，只看「安裝紀錄 != tap 版本」
+  就換 —— 這是唯一真的會把自我更新的 app 換成舊版的路徑，也是跟 app 自身更新機制打架的開始。
 - **需要 sudo 的 cask 必須從自動化裡拆出來** → `Brewfile.manual`。
   放進 `run_onchange` 會讓新機 bootstrap 卡在密碼提示，這對無人值守的 script 是致命的。
 - `version :latest` 的 cask 不驗 checksum，上游改連結時會壞幾天。無解，知道就好。

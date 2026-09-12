@@ -33,7 +33,7 @@ update: ## 更新全部：brew 套件 + 上游 externals + gcloud
 	chezmoi apply --refresh-externals
 	@echo "==> ☁️  gcloud"
 	@command -v gcloud >/dev/null 2>&1 && gcloud components update --quiet || echo "   （沒有 gcloud，略過）"
-	@echo "==> ✅ 更新完成。cask 不在這裡處理 —— 它們 auto_updates，讓 app 自己更新。"
+	@echo "==> ✅ 更新完成。cask 只在 app 真實版本落後 tap 時才會被升 —— 不會降版，其餘讓 app 自己更新。"
 
 refresh: ## 只強制重抓上游 oh-my-zsh / p10k / plugins
 	# --include=externals 把範圍限制在上游內容，所以 --force 是安全的

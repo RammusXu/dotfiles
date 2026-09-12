@@ -25,7 +25,7 @@
 |---|---|---|
 | brew 套件（CLI） | `make update` | `brew update && upgrade && cleanup`，並順手做下面的 externals 和 gcloud |
 | oh-my-zsh / p10k / zsh plugin | `make refresh` | 由 `.chezmoiexternal` 抓上游。平常有 `refreshPeriod = 168h`，`refresh` 是強制立刻抓 |
-| GUI app（cask） | **不用管** | 全部 `auto_updates true`，app 自己更新。不要用 `brew upgrade --cask --greedy` 去接管 |
+| GUI app（cask） | **不用管** | 全部 `auto_updates true`，讓 app 自己更新。`brew upgrade` 碰到它們時會先比對 app 真實版本，只補「app 真的落後 tap」的情況，不會降版。不要用 `--greedy` —— 那會繞過該檢查 |
 | gcloud | `gcloud components update` | 官方 archive 裝的，不走 brew（`make update` 已含） |
 | 這份 dotfiles 本身 | `make pull` | = `chezmoi update` = git pull + apply |
 
